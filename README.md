@@ -31,7 +31,6 @@
 | **カレンダー連携** | 行ける候補日の表示 | ⚠️ モック実装 |
 | **Vertex AI 統合** | 本格的なAI推論 | ❌ 未実装 |
 | **LINE通知** | LINE Messaging API でプッシュ通知 | ❌ Phase 3 予定 |
-| **FCM通知** | Firebase Cloud Messaging | ❌ Phase 3 予定 |
 
 ---
 
@@ -56,7 +55,6 @@ graph TD
         subgraph "Firebase"
             Auth[Firebase Auth<br/>匿名認証]
             Firestore[(Firestore<br/>posts / users / events)]
-            FCM[Firebase Cloud Messaging]
         end
         
         subgraph "AI Layer (v3予定)"
@@ -77,9 +75,7 @@ graph TD
     Scheduler -.->|"定期トリガー"| API
     API -.->|"推論リクエスト"| VertexAI
     API -.->|"通知送信"| LINE
-    API -.->|"通知送信"| FCM
-    LINE -.->|"プッシュ通知"| User
-    FCM -.->|"プッシュ通知"| User
+    LINE -.->|"📱 プッシュ通知"| User
 ```
 
 ### アーキテクチャの特徴
@@ -189,7 +185,6 @@ tsugi-no-tokimeki/
 | **CI/CD** | Cloud Build | - | GitHub連携自動デプロイ |
 | **Container** | Docker | - | マルチステージビルド |
 | **Notification** | LINE Messaging API | - | プッシュ通知 (v3予定) 📱 |
-| **Notification** | Firebase Cloud Messaging | - | Web プッシュ通知 (v3予定) |
 | **AI** | Vertex AI (Gemini) | 2.0 | 行動判断AI (v3予定) 🤖 |
 
 ---
@@ -222,7 +217,6 @@ tsugi-no-tokimeki/
 - [ ] Cloud Scheduler 定期実行
 - [ ] Event Matcher (イベント情報との連携)
 - [ ] **LINE Messaging API 連携** ← 📱
-- [ ] FCM プッシュ通知
 - [ ] PWA 対応
 
 ---
