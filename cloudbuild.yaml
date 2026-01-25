@@ -1,0 +1,56 @@
+steps:
+  # Build the Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/tsugi-no-tokimeki:$COMMIT_SHA'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_FIREBASE_API_KEY=${_NEXT_PUBLIC_FIREBASE_API_KEY}'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${_NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN}'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_FIREBASE_PROJECT_ID=${_NEXT_PUBLIC_FIREBASE_PROJECT_ID}'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=${_NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET}'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${_NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID}'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_FIREBASE_APP_ID=${_NEXT_PUBLIC_FIREBASE_APP_ID}'
+      - '.'
+
+  # Push the image to Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/tsugi-no-tokimeki:$COMMIT_SHA'
+
+  # Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'tsugi-no-tokimeki'
+      - '--image'
+      - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/tsugi-no-tokimeki:$COMMIT_SHA'
+      - '--region'
+      - 'asia-northeast1'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+
+images:
+  - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/tsugi-no-tokimeki:$COMMIT_SHA'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+substitutions:
+  _NEXT_PUBLIC_FIREBASE_API_KEY: '***REMOVED***'
+  _NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: 'carbon-zone-485401-e6.firebaseapp.com'
+  _NEXT_PUBLIC_FIREBASE_PROJECT_ID: 'carbon-zone-485401-e6'
+  _NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: 'carbon-zone-485401-e6.firebasestorage.app'
+  _NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: '265901745615'
+  _NEXT_PUBLIC_FIREBASE_APP_ID: '***REMOVED***'
+
