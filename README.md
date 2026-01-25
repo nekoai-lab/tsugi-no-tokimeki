@@ -30,7 +30,8 @@
 | **行動判断 AI** | 今動くべきかの判断と根拠表示 | ⚠️ モック実装 |
 | **カレンダー連携** | 行ける候補日の表示 | ⚠️ モック実装 |
 | **Vertex AI 統合** | 本格的なAI推論 | ❌ 未実装 |
-| **プッシュ通知** | LINE/FCM連携 | ❌ 未実装 |
+| **LINE通知** | LINE Messaging API でプッシュ通知 | ❌ Phase 3 予定 |
+| **FCM通知** | Firebase Cloud Messaging | ❌ Phase 3 予定 |
 
 ---
 
@@ -202,7 +203,8 @@ tsugi-no-tokimeki/
 
 - [ ] Cloud Scheduler 定期実行
 - [ ] Event Matcher (イベント情報との連携)
-- [ ] プッシュ通知 (LINE Messaging API / FCM)
+- [ ] **LINE Messaging API 連携** ← 📱
+- [ ] FCM プッシュ通知
 - [ ] PWA 対応
 
 ---
@@ -306,6 +308,50 @@ service cloud.firestore {
     }
   }
 }
+```
+
+---
+
+## 📱 LINE連携（Phase 3 予定）
+
+v3では **LINE Messaging API** を使用したプッシュ通知を実装予定です。
+
+### 通知シナリオ
+
+```mermaid
+sequenceDiagram
+    participant Scheduler as Cloud Scheduler
+    participant API as Cloud Run
+    participant AI as Vertex AI
+    participant LINE as LINE Messaging API
+    participant User as ユーザー
+
+    Note over Scheduler: 毎朝 8:00 / 毎時
+    Scheduler->>API: トリガー
+    API->>AI: 最新投稿 + ユーザー設定を分析
+    AI-->>API: 行動提案（確度・根拠）
+    
+    alt 確度が高い場合
+        API->>LINE: プッシュメッセージ送信
+        LINE-->>User: 「いま動こう！」通知
+    end
+```
+
+### 実装予定の機能
+
+| 機能 | 説明 |
+|------|------|
+| **リッチメッセージ** | 目撃場所・残り個数をカード形式で通知 |
+| **クイックリプライ** | 「行く」「スキップ」をワンタップで回答 |
+| **リマインダー** | 設定した空き時間の前日に通知 |
+| **フォローアップ** | 「買えた？」の確認と自動投稿 |
+
+### LINE連携の設定（予定）
+
+```env
+# LINE Messaging API
+LINE_CHANNEL_ACCESS_TOKEN=your_channel_access_token
+LINE_CHANNEL_SECRET=your_channel_secret
 ```
 
 ---
