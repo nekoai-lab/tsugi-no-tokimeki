@@ -56,12 +56,17 @@ graph TD
         subgraph "Firebase"
             Auth[Firebase Auth<br/>匿名認証]
             Firestore[(Firestore<br/>posts / users / events)]
+            FCM[Firebase Cloud Messaging]
         end
         
         subgraph "AI Layer (v3予定)"
             VertexAI[Vertex AI<br/>Gemini 2.0]
             Scheduler[Cloud Scheduler<br/>定期実行]
         end
+    end
+    
+    subgraph "External Services (v3予定)"
+        LINE[LINE Messaging API<br/>📱 プッシュ通知]
     end
     
     User <--> UI
@@ -71,6 +76,10 @@ graph TD
     API <--> Firestore
     Scheduler -.->|"定期トリガー"| API
     API -.->|"推論リクエスト"| VertexAI
+    API -.->|"通知送信"| LINE
+    API -.->|"通知送信"| FCM
+    LINE -.->|"プッシュ通知"| User
+    FCM -.->|"プッシュ通知"| User
 ```
 
 ### アーキテクチャの特徴
@@ -92,7 +101,8 @@ sequenceDiagram
     participant UI as Browser (React)
     participant Run as Cloud Run
     participant FS as Firestore
-    participant AI as AI Agent
+    participant AI as Vertex AI
+    participant LINE as LINE API
 
     Note over User, UI: 目撃情報を投稿
     User->>UI: 投稿ボタン押下
@@ -104,6 +114,11 @@ sequenceDiagram
     AI->>FS: 直近の投稿を取得
     AI->>AI: 期待値・根拠を計算
     AI->>FS: suggestions に保存
+    
+    alt 確度が高い場合 (v3)
+        Run->>LINE: pushMessage()
+        LINE-->>User: 📱「いま動こう！」通知
+    end
     
     FS-->>UI: onSnapshot (判断結果)
     UI-->>User: 「いま動こう！」表示
@@ -173,6 +188,9 @@ tsugi-no-tokimeki/
 | **Hosting** | Cloud Run | - | コンテナホスティング |
 | **CI/CD** | Cloud Build | - | GitHub連携自動デプロイ |
 | **Container** | Docker | - | マルチステージビルド |
+| **Notification** | LINE Messaging API | - | プッシュ通知 (v3予定) 📱 |
+| **Notification** | Firebase Cloud Messaging | - | Web プッシュ通知 (v3予定) |
+| **AI** | Vertex AI (Gemini) | 2.0 | 行動判断AI (v3予定) 🤖 |
 
 ---
 
