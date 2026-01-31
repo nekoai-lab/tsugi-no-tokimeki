@@ -14,9 +14,10 @@
 **Tsugi no Tokimeki** は、推しキャラグッズ（ガチャ・シール等）の目撃情報をリアルタイムで共有し、AIが「今動くべきか」を判断してユーザーに提案するWebアプリケーションです。
 
 - 📍 コミュニティからの目撃情報をリアルタイム収集
-- 🤖 AI（将来的にVertex AI/Gemini）による行動判断
+- 🤖 **Vertex AI (Gemini 2.5)** による行動判断 ✅
+- ⏰ **Cloud Scheduler** で朝8時・夕18時に自動分析 ✅
 - 📅 ユーザーの空き時間 × イベント情報のマッチング
-- 🔔 最適なタイミングでの通知（v3予定）
+- 🔔 LINE通知でプッシュ通知（次フェーズ）
 
 ---
 
@@ -27,10 +28,11 @@
 | **オンボーディング** | 推しキャラ・エリア・空き時間の設定 | ✅ 実装済み |
 | **投稿機能** | 目撃情報（見た/買えた/売り切れ）の投稿 | ✅ 実装済み |
 | **フィード表示** | コミュニティ投稿のリアルタイム表示 | ✅ 実装済み |
-| **行動判断 AI** | 今動くべきかの判断と根拠表示 | ⚠️ モック実装 |
+| **行動判断 AI** | 今動くべきかの判断と根拠表示 | ✅ 実装済み |
+| **Vertex AI 統合** | Gemini 2.5 による本格的なAI推論 | ✅ 実装済み |
+| **Cloud Scheduler** | 朝8時+夕18時の定期分析 | ✅ 実装済み |
 | **カレンダー連携** | 行ける候補日の表示 | ⚠️ モック実装 |
-| **Vertex AI 統合** | 本格的なAI推論 | ❌ 未実装 |
-| **LINE通知** | LINE Messaging API でプッシュ通知 | ❌ Phase 3 予定 |
+| **LINE通知** | LINE Messaging API でプッシュ通知 | 🔄 次フェーズ |
 
 ---
 
@@ -57,9 +59,9 @@ graph TD
             Firestore[(Firestore<br/>posts / users / events)]
         end
         
-        subgraph "AI Layer (v3予定)"
+        subgraph "AI Layer ✅"
             VertexAI[Vertex AI<br/>Gemini 2.5]
-            Scheduler[Cloud Scheduler<br/>定期実行]
+            Scheduler[Cloud Scheduler<br/>朝8時 + 夕18時]
         end
     end
     
@@ -150,21 +152,27 @@ sequenceDiagram
 
 ```
 tsugi-no-tokimeki/
-├── src/
-│   └── app/
-│       ├── page.tsx          # メインアプリ (全UIコンポーネント)
-│       ├── layout.tsx        # ルートレイアウト
-│       └── globals.css       # グローバルスタイル (Tailwind)
+├── app/
+│   ├── page.tsx              # メインアプリ (全UIコンポーネント)
+│   ├── layout.tsx            # ルートレイアウト
+│   ├── globals.css           # グローバルスタイル (Tailwind)
+│   └── api/
+│       ├── analyze/          # 個別ユーザー分析 API
+│       │   └── route.ts
+│       └── analyze-all/      # Cloud Scheduler用 全ユーザー分析 API
+│           └── route.ts
 ├── docs/
 │   └── DEVELOPMENT_ROADMAP.md  # 開発ロードマップ
 ├── public/                   # 静的アセット
 ├── Dockerfile                # Cloud Run 用マルチステージビルド
 ├── .dockerignore             # Docker ビルド除外設定
 ├── cloudbuild.yaml           # Cloud Build パイプライン設定
+├── firebase.json             # Firebase Emulator 設定
 ├── next.config.ts            # Next.js 設定 (standalone出力)
 ├── tailwind.config.ts        # Tailwind CSS 設定
 ├── tsconfig.json             # TypeScript 設定
 ├── package.json              # 依存関係
+├── .env.example              # 環境変数テンプレート
 └── .env.local                # 環境変数 (Git管理外)
 ```
 
@@ -205,18 +213,17 @@ tsugi-no-tokimeki/
 - [x] 環境変数設定 (Cloud Build Substitutions)
 - [x] API キー制限 (HTTP Referrer)
 
-### Phase 2: バックエンド強化 🔄 次フェーズ
+### Phase 2: バックエンド強化 ✅ 完了
 
 - [x] Vertex AI (Gemini 2.5) 連携
-- [ ] Route Handlers (API エンドポイント)
+- [x] Route Handlers (`/api/analyze`, `/api/analyze-all`)
+- [x] Cloud Scheduler 定期実行（朝8時 + 夕18時）
 - [ ] 転売対策 (posts_private コレクション)
-- [ ] Edge Functions 最適化
 
-### Phase 3: v3 完全版 📅 予定
+### Phase 3: LINE連携 🔄 進行中
 
-- [ ] Cloud Scheduler 定期実行
+- [ ] **LINE Messaging API 連携** ← 📱 次はここ！
 - [ ] Event Matcher (イベント情報との連携)
-- [ ] **LINE Messaging API 連携** ← 📱
 - [ ] PWA 対応
 
 ---
