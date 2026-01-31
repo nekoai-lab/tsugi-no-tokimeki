@@ -6,7 +6,8 @@ import {
   getAuth, 
   signInAnonymously, 
   onAuthStateChanged,
-  signOut
+  signOut,
+  connectAuthEmulator
 } from 'firebase/auth';
 import { 
   getFirestore, 
@@ -18,7 +19,8 @@ import {
   serverTimestamp, 
   doc, 
   setDoc,
-  Timestamp
+  Timestamp,
+  connectFirestoreEmulator
 } from 'firebase/firestore';
 import { 
   Heart, 
@@ -38,13 +40,15 @@ import {
 } from 'lucide-react';
 
 // --- Firebase Configuration & Initialization ---
+const USE_EMULATOR = process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR === 'true';
+
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'demo-api-key',
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || 'demo-project.firebaseapp.com',
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'demo-project',
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 'demo-project.appspot.com',
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '000000000000',
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || 'demo-app-id',
 };
 
 // Initialize Firebase only once
@@ -52,6 +56,20 @@ const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0
 const auth = getAuth(app);
 const db = getFirestore(app);
 const appId = 'tsugi-no-tokimeki';
+
+// Connect to Emulators if enabled
+let emulatorsConnected = false;
+if (USE_EMULATOR && typeof window !== 'undefined' && !emulatorsConnected) {
+  try {
+    connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
+    connectFirestoreEmulator(db, '127.0.0.1', 8080);
+    emulatorsConnected = true;
+    console.log('🔥 Firebase Emulators connected');
+  } catch (e) {
+    // Already connected
+    console.log('Emulators already connected');
+  }
+}
 
 // --- Types ---
 interface UserProfile {

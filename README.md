@@ -376,4 +376,90 @@ LINE_CHANNEL_SECRET=your_channel_secret
 
 ---
 
+## 👥 共同開発オンボーディング
+
+### 1. How we work
+
+- `main` ブランチへの直接 push は禁止（Branch Protection 設定済み）
+- 機能追加・修正は **PR（Pull Request）** 経由で行う
+- **Secrets（APIキー等）は絶対にコミットしない**
+- ローカル開発は Firebase Emulator を使用
+
+### 2. Prerequisites
+
+- Node.js v20+
+- Java 11+ （Firebase Emulator に必要）
+  - https://adoptium.net/ からインストール
+
+### 3. Setup
+
+```bash
+# 1. clone
+git clone https://github.com/nekoai-lab/tsugi-no-tokimeki.git
+cd tsugi-no-tokimeki
+
+# 2. install
+npm install
+
+# 3. env
+cp .env.example .env.local
+
+# 4. emulator（別ターミナルで）
+npx firebase emulators:start
+
+# 5. dev
+npm run dev
+```
+
+http://localhost:3000 にアクセス
+
+### 4. Env vars
+
+`.env.local` に以下を設定：
+
+```env
+NEXT_PUBLIC_USE_FIREBASE_EMULATOR=true
+```
+
+> 本番用の Firebase API キーは不要です。
+> Emulator モードで動作します。
+
+### 5. Emulator UI
+
+Firebase Emulator UI: http://localhost:4000
+
+- Auth: http://localhost:9099
+- Firestore: http://localhost:8080
+
+### 6. PR steps
+
+```bash
+# 1. ブランチ作成
+git checkout -b feature/your-feature-name
+
+# 2. 変更をコミット
+git add .
+git commit -m "feat: 機能の説明"
+
+# 3. push
+git push origin feature/your-feature-name
+
+# 4. GitHub で PR を作成
+# 5. レビュー後、オーナーがマージ
+```
+
+### 7. Notes
+
+| 機能 | ローカル | 本番 |
+|------|---------|------|
+| Firebase Auth | Emulator | 本番 |
+| Firestore | Emulator | 本番 |
+| LINE通知 | モック（動作しない） | tsukineko が設定 |
+| Vertex AI | モック（動作しない） | tsukineko が設定 |
+
+> LINE / Vertex AI の本番設定は tsukineko が管理します。
+> ローカルではモック実装で動作確認してください。
+
+---
+
 *Created with 💖 by nekoai-lab*

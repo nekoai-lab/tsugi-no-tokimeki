@@ -29,7 +29,7 @@
 
 | コンポーネント | 状態 | 備考 |
 |--------------|------|------|
-| Cloud Run デプロイ | ❌ 未実装 | 本番環境 |
+| Cloud Run デプロイ | ✅ 完了 | 本番環境（Cloud Build連携済み） |
 | Cloud Scheduler | ❌ 未実装 | 定期実行（毎朝/毎時） |
 | Event Matcher | ❌ 未実装 | 空き時間 × イベント突合 |
 | user_event_matches | ❌ 未実装 | マッチング結果保存 |
@@ -147,6 +147,7 @@ NEXT_PUBLIC_FIREBASE_APP_ID=xxx
 
 ---
 
-*Last Updated: 2026-01-25*
+*Last Updated: 2026-01-31*
+
 
 
