@@ -21,7 +21,7 @@
 | コンポーネント | 状態 | 備考 |
 |--------------|------|------|
 | Next.js Route Handlers | ✅ 完了 | /api/analyze エンドポイント |
-| Vertex AI (Gemini) 連携 | ✅ 完了 | gemini-2.0-flash-001 使用 |
+| Vertex AI (Gemini) 連携 | ✅ 完了 | gemini-2.5-flash 使用 |
 | suggestions コレクション | ✅ 完了 | users/{uid}/suggestions/latest |
 | 転売対策 (posts_private) | ❌ 未実装 | 住所情報の分離管理 |
 

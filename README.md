@@ -58,7 +58,7 @@ graph TD
         end
         
         subgraph "AI Layer (v3予定)"
-            VertexAI[Vertex AI<br/>Gemini 2.0]
+            VertexAI[Vertex AI<br/>Gemini 2.5]
             Scheduler[Cloud Scheduler<br/>定期実行]
         end
     end
@@ -185,7 +185,7 @@ tsugi-no-tokimeki/
 | **CI/CD** | Cloud Build | - | GitHub連携自動デプロイ |
 | **Container** | Docker | - | マルチステージビルド |
 | **Notification** | LINE Messaging API | - | プッシュ通知 (v3予定) 📱 |
-| **AI** | Vertex AI (Gemini) | 2.0 | 行動判断AI (v3予定) 🤖 |
+| **AI** | Vertex AI (Gemini) | 2.5 | 行動判断AI ✅ |
 
 ---
 
@@ -207,7 +207,7 @@ tsugi-no-tokimeki/
 
 ### Phase 2: バックエンド強化 🔄 次フェーズ
 
-- [ ] Vertex AI (Gemini 2.0) 連携
+- [x] Vertex AI (Gemini 2.5) 連携
 - [ ] Route Handlers (API エンドポイント)
 - [ ] 転売対策 (posts_private コレクション)
 - [ ] Edge Functions 最適化
