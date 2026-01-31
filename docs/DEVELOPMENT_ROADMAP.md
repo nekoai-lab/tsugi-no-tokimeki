@@ -16,14 +16,14 @@
 | カレンダー表示 | ✅ 完了 | 行ける候補日の表示 |
 | 行動判断ロジック | ⚠️ モック | クライアント側でシミュレーション |
 
-### Phase 2: バックエンド強化（TODO）
+### Phase 2: バックエンド強化
 
 | コンポーネント | 状態 | 備考 |
 |--------------|------|------|
-| Next.js Route Handlers | ❌ 未実装 | API エンドポイント |
-| Vertex AI (Gemini) 連携 | ❌ 未実装 | 本格的な行動判断AI |
+| Next.js Route Handlers | ✅ 完了 | /api/analyze エンドポイント |
+| Vertex AI (Gemini) 連携 | ✅ 完了 | gemini-2.0-flash-001 使用 |
+| suggestions コレクション | ✅ 完了 | users/{uid}/suggestions/latest |
 | 転売対策 (posts_private) | ❌ 未実装 | 住所情報の分離管理 |
-| suggestions コレクション | ❌ 未実装 | AI生成の行動提案保存 |
 
 ### Phase 3: v3 完全版（TODO）
 
@@ -129,21 +129,21 @@ NEXT_PUBLIC_FIREBASE_APP_ID=xxx
 
 ## 📅 今後の TODO
 
-### 短期（MVP完成）
-- [ ] ローカルで動作確認
-- [ ] UI/UX の微調整
-- [ ] エラーハンドリング強化
+### 短期（完了）
+- [x] ローカルで動作確認
+- [x] Firebase Emulator対応
+- [x] Cloud Run デプロイ
 
-### 中期（バックエンド）
-- [ ] Route Handlers でAPI作成
-- [ ] Vertex AI 連携
+### 中期（進行中）
+- [x] Route Handlers でAPI作成（/api/analyze）
+- [x] Vertex AI 連携
+- [ ] Cloud Scheduler 設定（定期実行）
 - [ ] 転売対策の実装
 
 ### 長期（v3完全版）
-- [ ] Cloud Run デプロイ
-- [ ] Cloud Scheduler 設定
 - [ ] Event Matcher 実装
-- [ ] プッシュ通知（LINE or FCM）
+- [ ] プッシュ通知（LINE連携）
+- [ ] Googleカレンダー連携
 
 ---
 
