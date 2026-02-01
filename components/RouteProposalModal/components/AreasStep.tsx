@@ -2,8 +2,6 @@
 
 import React from 'react';
 import { MapPin } from 'lucide-react';
-import { AREAS } from '@/lib/utils';
-import { StepButton } from './StepButton';
 import type { RouteProposalFormData } from '@/lib/routeProposalTypes';
 
 interface AreasStepProps {
@@ -14,31 +12,20 @@ interface AreasStepProps {
     errors: { areas?: { message?: string } };
     inputRef: React.RefObject<HTMLInputElement | null>;
     areaCandidates: string[];
+    renderLocation?: 'chat' | 'bottom';
 }
 
 export function AreasStep({
     formValues,
-    onAreaToggle,
     onCustomAreaChange,
     onSubmit,
     errors,
     inputRef,
-    areaCandidates,
 }: AreasStepProps) {
     const isDisabled = (formValues.areas?.length || 0) === 0 && !formValues.customArea.trim();
 
     return (
         <>
-            <div className="grid grid-cols-2 gap-2 mb-3">
-                {areaCandidates.slice(0, 6).map((area) => (
-                    <StepButton
-                        key={area}
-                        label={area}
-                        isSelected={formValues.areas?.includes(area) || false}
-                        onClick={() => onAreaToggle(area)}
-                    />
-                ))}
-            </div>
             <div className="relative mb-2">
                 <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input

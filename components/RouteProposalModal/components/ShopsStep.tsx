@@ -1,8 +1,6 @@
 "use client";
 
 import React from 'react';
-import { PREFERRED_SHOPS } from '@/lib/utils';
-import { StepButton } from './StepButton';
 import type { RouteProposalFormData } from '@/lib/routeProposalTypes';
 
 interface ShopsStepProps {
@@ -22,16 +20,6 @@ export function ShopsStep({
 }: ShopsStepProps) {
     return (
         <>
-            <div className="grid grid-cols-2 gap-2 mb-3">
-                {PREFERRED_SHOPS.map((shop) => (
-                    <StepButton
-                        key={shop}
-                        label={shop}
-                        isSelected={formValues.preferredShops?.includes(shop) || false}
-                        onClick={() => onShopToggle(shop)}
-                    />
-                ))}
-            </div>
             <div className="relative mb-2">
                 <input
                     value={formValues.customShop}

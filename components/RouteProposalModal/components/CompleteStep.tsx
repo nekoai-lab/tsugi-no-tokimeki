@@ -1,7 +1,5 @@
 "use client";
 
-import React from 'react';
-
 interface CompleteStepProps {
     onConfirm: () => void;
     onAnotherProposal: () => void;
