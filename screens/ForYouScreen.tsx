@@ -1,12 +1,14 @@
 "use client";
 
 import React, { useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { useApp } from '@/contexts/AppContext';
-import { MapPin, Clock, Calendar as CalendarIcon, Search } from 'lucide-react';
+import { MapPin, Clock, Calendar as CalendarIcon, Search, Route } from 'lucide-react';
 import type { Suggestion, UserProfile } from '@/lib/types';
 
 export default function ForYouScreen() {
     const { suggestions, userProfile } = useApp();
+    const router = useRouter();
 
     // Helper to calculate next match
     const nextMatch = useMemo(() => {
@@ -103,6 +105,17 @@ export default function ForYouScreen() {
                         </p>
                     </div>
                 </div>
+            </section>
+
+            {/* 4. Route Proposal Button */}
+            <section>
+                <button
+                    onClick={() => router.push('/calendar?add=true')}
+                    className="w-full bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-bold py-4 px-6 rounded-2xl shadow-lg transition-all transform hover:scale-[1.02] flex items-center justify-center gap-2"
+                >
+                    <Route className="w-5 h-5" />
+                    今日のルートを提案してもらう
+                </button>
             </section>
         </div>
     );

@@ -4,9 +4,9 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useApp } from '@/contexts/AppContext';
 import { Bell, Plus } from 'lucide-react';
-import NavButton from '@/components/NavButton';
-import PostModal from '@/components/PostModal';
+import NavButton from '@/components/NavButton';;
 import { Sparkles, Home, Calendar as CalendarIcon, User } from 'lucide-react';
+import PostModal from '@/components/PostModal';
 
 export default function MainLayout({
     children,
