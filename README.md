@@ -139,8 +139,9 @@ sequenceDiagram
     
     alt 未設定の場合
         App-->>User: オンボーディング画面
-        User->>App: 推し・エリア・時間を設定
-        App->>FS: ユーザー設定を保存
+        User->>App: Step1-3: 推し・エリア・時間を設定
+        User->>App: Step4: LINE連携（任意）
+        App->>FS: ユーザー設定 + lineUserId を保存
     else 設定済みの場合
         App-->>User: メイン画面
     end
@@ -175,11 +176,13 @@ tsugi-no-tokimeki/
 │           └── route.ts
 ├── components/               # 再利用可能なコンポーネント
 │   ├── NavButton.tsx         # ナビゲーションボタン (Link使用)
-│   └── PostModal.tsx         # 投稿モーダル
+│   ├── PostModal.tsx         # 投稿モーダル
+│   └── LineLoginButton.tsx   # LINE ログインボタン
 ├── contexts/                 # React Context
 │   └── AppContext.tsx        # グローバル状態管理
 ├── lib/                      # ユーティリティ・設定
 │   ├── firebase.ts           # Firebase初期化
+│   ├── liff.ts               # LINE LIFF SDK 初期化・操作
 │   ├── types.ts              # TypeScript型定義
 │   └── utils.ts              # ヘルパー関数・定数
 ├── screens/                  # 画面コンポーネント
@@ -248,7 +251,11 @@ tsugi-no-tokimeki/
 
 ### Phase 3: LINE連携 🔄 進行中
 
-- [ ] **LINE Messaging API 連携** ← 📱 次はここ！
+- [x] LINE LIFF SDK 導入
+- [x] LINE ログイン機能（オンボーディング Step 4）
+- [x] lineUserId を Firestore に保存
+- [x] Secret Manager に LINE シークレット登録
+- [ ] **プッシュ通知 API 実装** ← 📱 次はここ！
 - [ ] Event Matcher (イベント情報との連携)
 - [ ] PWA 対応
 
@@ -327,6 +334,20 @@ Cloud Build トリガーの「代入変数」で設定：
 | `_NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` | Firebase Auth ドメイン |
 | `_NEXT_PUBLIC_FIREBASE_PROJECT_ID` | Firebase プロジェクト ID |
 | `_NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET` | Firebase Storage バケット |
+| `_NEXT_PUBLIC_LIFF_ID` | LINE LIFF ID（LINEログイン用） |
+
+### シークレット (Secret Manager)
+
+| シークレット名 | 説明 |
+|---------------|------|
+| `FIREBASE_API_KEY` | Firebase API キー |
+| `FIREBASE_AUTH_DOMAIN` | Firebase Auth ドメイン |
+| `FIREBASE_PROJECT_ID` | Firebase プロジェクト ID |
+| `FIREBASE_STORAGE_BUCKET` | Firebase Storage バケット |
+| `FIREBASE_MESSAGING_SENDER_ID` | Firebase Sender ID |
+| `FIREBASE_APP_ID` | Firebase App ID |
+| `LINE_CHANNEL_ACCESS_TOKEN` | LINE Messaging API アクセストークン |
+| `LINE_CHANNEL_SECRET` | LINE チャネルシークレット |
 | `_NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` | Firebase Sender ID |
 | `_NEXT_PUBLIC_FIREBASE_APP_ID` | Firebase App ID |
 
@@ -368,7 +389,7 @@ service cloud.firestore {
 │                        LINE連携 全体像                               │
 └─────────────────────────────────────────────────────────────────────┘
 
-【Phase 1: LINEログイン】
+【Phase 1: LINEログイン】 ✅ 実装済み
 
 ユーザー                    アプリ                      LINE
    │                         │                          │
@@ -392,7 +413,7 @@ service cloud.firestore {
 └─────────────────────────────────────────────────────────────────────┘
 
 
-【Phase 2: 定期分析】
+【Phase 2: 定期分析】 ✅ 実装済み
 
 Cloud Scheduler ──────> Cloud Run ──────> Vertex AI
 (毎日 8:00 / 18:00)         │                  │
@@ -409,7 +430,7 @@ Cloud Scheduler ──────> Cloud Run ──────> Vertex AI
 └─────────────────────────────────────────────────────────────────────┘
 
 
-【Phase 3: プッシュ通知】
+【Phase 3: プッシュ通知】 🔄 次のステップ
 
 Cloud Run                              LINE Messaging API
    │                                          │
