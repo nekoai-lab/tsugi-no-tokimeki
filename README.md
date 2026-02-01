@@ -221,8 +221,9 @@ tsugi-no-tokimeki/
 | **Hosting** | Cloud Run | - | コンテナホスティング |
 | **CI/CD** | Cloud Build | - | GitHub連携自動デプロイ |
 | **Container** | Docker | - | マルチステージビルド |
-| **Notification** | LINE Messaging API | - | プッシュ通知 (v3予定) 📱 |
+| **Notification** | LINE Messaging API | - | プッシュ通知 ✅ |
 | **AI** | Vertex AI (Gemini) | 2.5 | 行動判断AI ✅ |
+| **Form** | react-hook-form + zod | - | フォームバリデーション |
 
 ---
 
@@ -249,15 +250,20 @@ tsugi-no-tokimeki/
 - [x] Cloud Scheduler 定期実行（朝8時 + 夕18時）
 - [ ] 転売対策 (posts_private コレクション)
 
-### Phase 3: LINE連携 🔄 進行中
+### Phase 3: LINE連携 ✅ 完了
 
 - [x] LINE LIFF SDK 導入
 - [x] LINE ログイン機能（オンボーディング Step 4）
 - [x] lineUserId を Firestore に保存
 - [x] Secret Manager に LINE シークレット登録
-- [ ] **プッシュ通知 API 実装** ← 📱 次はここ！
+- [x] プッシュ通知 API 実装（`/api/analyze-all` に統合）
+- [x] ルート提案 UI（AIでスケジュール作成）
+
+### Phase 4: 今後の予定
+
 - [ ] Event Matcher (イベント情報との連携)
 - [ ] PWA 対応
+- [ ] LINE Webhook 受信
 
 ---
 
@@ -430,7 +436,7 @@ Cloud Scheduler ──────> Cloud Run ──────> Vertex AI
 └─────────────────────────────────────────────────────────────────────┘
 
 
-【Phase 3: プッシュ通知】 🔄 次のステップ
+【Phase 3: プッシュ通知】 ✅ 実装済み
 
 Cloud Run                              LINE Messaging API
    │                                          │
@@ -460,9 +466,9 @@ Cloud Run                              LINE Messaging API
 | エンドポイント | 用途 | 状態 |
 |---------------|------|------|
 | `/api/analyze` | 個別ユーザー分析 | ✅ 実装済み |
-| `/api/analyze-all` | 全ユーザー一括分析 | ✅ 実装済み |
+| `/api/analyze-all` | 全ユーザー一括分析 + プッシュ通知 | ✅ 実装済み |
+| `/api/route-proposal` | ルート提案（AI スケジュール作成） | ✅ 実装済み |
 | `/api/line-webhook` | LINE Webhook受信 | 🔄 予定 |
-| `/api/notify` | プッシュ通知送信 | 🔄 予定 |
 
 ### 通知シナリオ
 
