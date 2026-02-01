@@ -139,8 +139,9 @@ sequenceDiagram
     
     alt 未設定の場合
         App-->>User: オンボーディング画面
-        User->>App: 推し・エリア・時間を設定
-        App->>FS: ユーザー設定を保存
+        User->>App: Step1-3: 推し・エリア・時間を設定
+        User->>App: Step4: LINE連携（任意）
+        App->>FS: ユーザー設定 + lineUserId を保存
     else 設定済みの場合
         App-->>User: メイン画面
     end
@@ -175,11 +176,13 @@ tsugi-no-tokimeki/
 │           └── route.ts
 ├── components/               # 再利用可能なコンポーネント
 │   ├── NavButton.tsx         # ナビゲーションボタン (Link使用)
-│   └── PostModal.tsx         # 投稿モーダル
+│   ├── PostModal.tsx         # 投稿モーダル
+│   └── LineLoginButton.tsx   # LINE ログインボタン
 ├── contexts/                 # React Context
 │   └── AppContext.tsx        # グローバル状態管理
 ├── lib/                      # ユーティリティ・設定
 │   ├── firebase.ts           # Firebase初期化
+│   ├── liff.ts               # LINE LIFF SDK 初期化・操作
 │   ├── types.ts              # TypeScript型定義
 │   └── utils.ts              # ヘルパー関数・定数
 ├── screens/                  # 画面コンポーネント
@@ -248,7 +251,11 @@ tsugi-no-tokimeki/
 
 ### Phase 3: LINE連携 🔄 進行中
 
-- [ ] **LINE Messaging API 連携** ← 📱 次はここ！
+- [x] LINE LIFF SDK 導入
+- [x] LINE ログイン機能（オンボーディング Step 4）
+- [x] lineUserId を Firestore に保存
+- [x] Secret Manager に LINE シークレット登録
+- [ ] **プッシュ通知 API 実装** ← 📱 次はここ！
 - [ ] Event Matcher (イベント情報との連携)
 - [ ] PWA 対応
 
@@ -327,6 +334,20 @@ Cloud Build トリガーの「代入変数」で設定：
 | `_NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` | Firebase Auth ドメイン |
 | `_NEXT_PUBLIC_FIREBASE_PROJECT_ID` | Firebase プロジェクト ID |
 | `_NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET` | Firebase Storage バケット |
+| `_NEXT_PUBLIC_LIFF_ID` | LINE LIFF ID（LINEログイン用） |
+
+### シークレット (Secret Manager)
+
+| シークレット名 | 説明 |
+|---------------|------|
+| `FIREBASE_API_KEY` | Firebase API キー |
+| `FIREBASE_AUTH_DOMAIN` | Firebase Auth ドメイン |
+| `FIREBASE_PROJECT_ID` | Firebase プロジェクト ID |
+| `FIREBASE_STORAGE_BUCKET` | Firebase Storage バケット |
+| `FIREBASE_MESSAGING_SENDER_ID` | Firebase Sender ID |
+| `FIREBASE_APP_ID` | Firebase App ID |
+| `LINE_CHANNEL_ACCESS_TOKEN` | LINE Messaging API アクセストークン |
+| `LINE_CHANNEL_SECRET` | LINE チャネルシークレット |
 | `_NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` | Firebase Sender ID |
 | `_NEXT_PUBLIC_FIREBASE_APP_ID` | Firebase App ID |
 
@@ -357,9 +378,91 @@ service cloud.firestore {
 
 ---
 
-## 📱 LINE連携（Phase 3 予定）
+## 📱 LINE連携（Phase 3）
 
-v3では **LINE Messaging API** を使用したプッシュ通知を実装予定です。
+**LINE LIFF + Messaging API** を使用したログイン・プッシュ通知を実装。
+
+### システム設計図
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                        LINE連携 全体像                               │
+└─────────────────────────────────────────────────────────────────────┘
+
+【Phase 1: LINEログイン】 ✅ 実装済み
+
+ユーザー                    アプリ                      LINE
+   │                         │                          │
+   │  「LINEでログイン」     │                          │
+   │ ────────────────────>   │                          │
+   │                         │   LIFF.init(LIFF_ID)     │
+   │                         │ ────────────────────────>│
+   │                         │                          │
+   │   <──────────────────── │ <──────── 認証画面 ──────│
+   │                         │                          │
+   │      認証を許可         │                          │
+   │ ────────────────────>   │ ────────────────────────>│
+   │                         │                          │
+   │                         │ <──── userId, profile ───│
+   │                         │                          │
+                             ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                         Firestore                                    │
+│   users/{uid}/profile/main                                           │
+│     └── lineUserId: "U1234567890abcdef"  ← 保存！                   │
+└─────────────────────────────────────────────────────────────────────┘
+
+
+【Phase 2: 定期分析】 ✅ 実装済み
+
+Cloud Scheduler ──────> Cloud Run ──────> Vertex AI
+(毎日 8:00 / 18:00)         │                  │
+                            │  分析リクエスト  │
+                            │ ────────────────>│
+                            │ <── 判定結果 ────│
+                            ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                         Firestore                                    │
+│   users/{uid}/suggestions/latest                                     │
+│     ├── decision: "go" / "gather" / "wait"                          │
+│     ├── score: 0.85                                                  │
+│     └── reasons: ["新宿で目撃情報あり！", ...]                      │
+└─────────────────────────────────────────────────────────────────────┘
+
+
+【Phase 3: プッシュ通知】 🔄 次のステップ
+
+Cloud Run                              LINE Messaging API
+   │                                          │
+   │  decision === "go" のユーザー抽出        │
+   │                                          │
+   │  POST /v2/bot/message/push               │
+   │  { "to": "U1234...", "messages": [...] } │
+   │ ────────────────────────────────────────>│
+   │                                          │
+   │                                          ▼
+   │                                    ┌──────────┐
+   │                                    │ 📱 LINE  │
+   │                                    │  通知！  │
+   │                                    └──────────┘
+```
+
+### 必要な設定
+
+| 項目 | 設定場所 | 用途 |
+|------|---------|------|
+| `NEXT_PUBLIC_LIFF_ID` | Cloud Build 代入変数 | LINEログイン |
+| `LINE_CHANNEL_ACCESS_TOKEN` | Secret Manager | プッシュ通知 |
+| `LINE_CHANNEL_SECRET` | Secret Manager | Webhook検証 |
+
+### API エンドポイント
+
+| エンドポイント | 用途 | 状態 |
+|---------------|------|------|
+| `/api/analyze` | 個別ユーザー分析 | ✅ 実装済み |
+| `/api/analyze-all` | 全ユーザー一括分析 | ✅ 実装済み |
+| `/api/line-webhook` | LINE Webhook受信 | 🔄 予定 |
+| `/api/notify` | プッシュ通知送信 | 🔄 予定 |
 
 ### 通知シナリオ
 
@@ -371,14 +474,14 @@ sequenceDiagram
     participant LINE as LINE Messaging API
     participant User as ユーザー
 
-    Note over Scheduler: 毎朝 8:00 / 毎時
-    Scheduler->>API: トリガー
-    API->>AI: 最新投稿 + ユーザー設定を分析
-    AI-->>API: 行動提案（確度・根拠）
+    Note over Scheduler: 毎日 8:00 / 18:00
+    Scheduler->>API: POST /api/analyze-all
+    API->>AI: 全ユーザー分析
+    AI-->>API: 判定結果 (go/gather/wait)
     
-    alt 確度が高い場合
+    alt decision === "go"
         API->>LINE: プッシュメッセージ送信
-        LINE-->>User: 「いま動こう！」通知
+        LINE-->>User: 「🎯 いま動こう！」通知
     end
 ```
 
@@ -386,15 +489,18 @@ sequenceDiagram
 
 | 機能 | 説明 |
 |------|------|
+| **LINEログイン** | LIFF SDK でユーザー認証 |
+| **プッシュ通知** | 「go」判定時に自動通知 |
 | **リッチメッセージ** | 目撃場所・残り個数をカード形式で通知 |
 | **クイックリプライ** | 「行く」「スキップ」をワンタップで回答 |
-| **リマインダー** | 設定した空き時間の前日に通知 |
-| **フォローアップ** | 「買えた？」の確認と自動投稿 |
 
-### LINE連携の設定（予定）
+### LINE連携の環境変数
 
 ```env
-# LINE Messaging API
+# LINE LIFF (フロントエンド)
+NEXT_PUBLIC_LIFF_ID=your_liff_id
+
+# LINE Messaging API (バックエンド - Secret Manager)
 LINE_CHANNEL_ACCESS_TOKEN=your_channel_access_token
 LINE_CHANNEL_SECRET=your_channel_secret
 ```

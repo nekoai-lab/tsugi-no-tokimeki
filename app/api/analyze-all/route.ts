@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { VertexAI } from '@google-cloud/vertexai';
 import { initializeApp, getApps } from 'firebase-admin/app';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import { sendPushMessage, createGoNotificationMessage } from '@/lib/line';
 
 // Firebase Admin SDK initialization
 const initFirebaseAdmin = () => {
@@ -39,6 +40,16 @@ interface UserProfile {
   favorites: string[];
   area: string;
   availability: Record<string, string[]>;
+  lineUserId?: string;
+}
+
+interface AnalysisResult {
+  userId: string;
+  success: boolean;
+  decision?: string;
+  reasons?: string[];
+  userProfile?: UserProfile;
+  error?: string;
 }
 
 // Prompt template for AI analysis
@@ -105,7 +116,7 @@ const analyzeUser = async (
   vertexAI: VertexAI,
   db: FirebaseFirestore.Firestore,
   appId: string
-) => {
+): Promise<AnalysisResult> => {
   try {
     // Build prompt and call Vertex AI
     const prompt = buildPrompt(posts, userProfile);
@@ -144,6 +155,8 @@ const analyzeUser = async (
       userId,
       success: true,
       decision: suggestionData.decision,
+      reasons: suggestionData.reasons,
+      userProfile,
     };
   } catch (error) {
     console.error(`Error analyzing user ${userId}:`, error);
@@ -151,6 +164,7 @@ const analyzeUser = async (
       userId,
       success: false,
       error: String(error),
+      userProfile,
     };
   }
 };
@@ -198,7 +212,7 @@ export async function POST() {
     })) as Post[];
 
     // Process each user
-    const results = [];
+    const results: AnalysisResult[] = [];
     let successCount = 0;
     let goCount = 0;
 
@@ -246,16 +260,53 @@ export async function POST() {
       }
     }
 
-    // TODO: LINE通知（goCount > 0 の場合）
-    // ここで LINE Messaging API を呼び出す
+    // LINE プッシュ通知を送信（"go" 判定 かつ lineUserId がある場合）
+    let notificationsSent = 0;
+    const notificationResults = [];
+
+    for (const result of results) {
+      if (
+        result.success &&
+        result.decision === 'go' &&
+        result.userProfile?.lineUserId
+      ) {
+        const character = result.userProfile.favorites[0] || '推しキャラ';
+        const area = result.userProfile.area || '近くのエリア';
+        const reasons = result.reasons || ['目撃情報があります！'];
+
+        const message = createGoNotificationMessage(character, area, reasons);
+        const pushResult = await sendPushMessage(
+          result.userProfile.lineUserId,
+          [message]
+        );
+
+        notificationResults.push({
+          userId: result.userId,
+          lineUserId: result.userProfile.lineUserId,
+          sent: pushResult.success,
+          error: pushResult.error,
+        });
+
+        if (pushResult.success) {
+          notificationsSent++;
+        }
+      }
+    }
 
     return NextResponse.json({
       success: true,
-      message: `Analyzed ${successCount}/${usersSnapshot.length} users`,
+      message: `Analyzed ${successCount}/${usersSnapshot.length} users, sent ${notificationsSent} notifications`,
       processedCount: successCount,
       goCount,
+      notificationsSent,
       duration: Date.now() - startTime,
-      results,
+      results: results.map(r => ({
+        userId: r.userId,
+        success: r.success,
+        decision: r.decision,
+        error: r.error,
+      })),
+      notificationResults,
     });
 
   } catch (error) {

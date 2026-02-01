@@ -8,6 +8,7 @@ import { db, appId } from '@/lib/firebase';
 import { CHARACTERS, AREAS, WEEKDAYS } from '@/lib/utils';
 import { Sparkles } from 'lucide-react';
 import type { UserProfile } from '@/lib/types';
+import LineLoginButton from '@/components/LineLoginButton';
 
 export default function OnboardingPage() {
     const { user, userProfile, loading } = useApp();
@@ -18,6 +19,7 @@ export default function OnboardingPage() {
         area: '',
         availability: {}
     });
+    const [lineUserId, setLineUserId] = useState<string | null>(null);
 
     // Redirect if profile already exists
     useEffect(() => {
@@ -46,11 +48,12 @@ export default function OnboardingPage() {
         });
     };
 
-    const saveProfile = async () => {
+    const saveProfile = async (skipLineConnect = false) => {
         if (!user) return;
         try {
             await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'main'), {
                 ...profile,
+                ...(lineUserId && { lineUserId }),
                 updatedAt: serverTimestamp()
             });
             // Profile will be updated via Context, then redirect happens in useEffect
@@ -58,6 +61,14 @@ export default function OnboardingPage() {
         } catch (e) {
             console.error("Error saving profile", e);
         }
+    };
+
+    const handleLineLoginSuccess = (lineProfile: {
+        userId: string;
+        displayName: string;
+        pictureUrl?: string;
+    }) => {
+        setLineUserId(lineProfile.userId);
     };
 
     if (loading || !user) {
@@ -167,12 +178,49 @@ export default function OnboardingPage() {
                         <div className="flex gap-3">
                             <button onClick={() => setStep(2)} className="flex-1 py-3 text-gray-500 font-medium">戻る</button>
                             <button
-                                onClick={saveProfile}
-                                className="flex-1 bg-pink-500 text-white py-3 rounded-xl font-bold shadow-lg shadow-pink-200"
+                                onClick={() => setStep(4)}
+                                className="flex-1 bg-gray-800 text-white py-3 rounded-xl font-bold"
                             >
-                                はじめる
+                                次へ
                             </button>
                         </div>
+                    </div>
+                )}
+
+                {step === 4 && (
+                    <div className="w-full bg-white p-6 rounded-2xl shadow-sm animate-in fade-in duration-500">
+                        <h2 className="text-lg font-bold mb-2 text-center">LINE通知を受け取る</h2>
+                        <p className="text-xs text-center text-gray-400 mb-6">
+                            LINEを連携すると、推しが見つかったときに<br />プッシュ通知でお知らせします 🔔
+                        </p>
+
+                        <div className="mb-6">
+                            <LineLoginButton
+                                onLoginSuccess={handleLineLoginSuccess}
+                                className="w-full"
+                            />
+                            {lineUserId && (
+                                <p className="text-center text-green-600 text-sm mt-3">
+                                    ✓ LINE連携が完了しました！
+                                </p>
+                            )}
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button onClick={() => setStep(3)} className="flex-1 py-3 text-gray-500 font-medium">戻る</button>
+                            <button
+                                onClick={() => saveProfile()}
+                                className="flex-1 bg-pink-500 text-white py-3 rounded-xl font-bold shadow-lg shadow-pink-200"
+                            >
+                                {lineUserId ? 'はじめる' : 'スキップして始める'}
+                            </button>
+                        </div>
+
+                        {!lineUserId && (
+                            <p className="text-center text-gray-400 text-xs mt-4">
+                                あとからプロフィールで連携できます
+                            </p>
+                        )}
                     </div>
                 )}
             </div>
