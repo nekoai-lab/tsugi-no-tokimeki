@@ -55,9 +55,7 @@ export const formatRouteProposal = (
     date?: string
 ): string => {
     const finalDate = date || '';
-    const dateLabel = finalDate
-        ? new Date(finalDate).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric', weekday: 'short' })
-        : '今日';
+    const dateLabel = finalDate ? formatDateLabel(finalDate) : '今日';
 
     let message = `📍 ${dateLabel} ${start}〜${end}のおすすめルート\n\n`;
 
@@ -91,15 +89,28 @@ export const dateToISOString = (dateType: 'today' | 'tomorrow' | string): string
         tomorrow.setDate(tomorrow.getDate() + 1);
         return tomorrow.toISOString().split('T')[0];
     } else {
-        return dateType; // ISO date string
+        return dateType; // ISO date string (YYYY-MM-DD)
     }
 };
 
 /**
- * 日付を日本語形式にフォーマット
+ * 日付を YYYY/MM/DD 形式にフォーマット
  */
 export const formatDateLabel = (dateStr: string): string => {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric', weekday: 'short' });
-};
+    if (!dateStr) return '';
 
+    try {
+        // YYYY-MM-DD 形式の文字列をパース（タイムゾーン問題を避ける）
+        const date = new Date(dateStr + 'T00:00:00');
+
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+
+        // YYYY/MM/DD 形式で返す
+        return `${year}/${month}/${day}`;
+    } catch (error) {
+        console.error('Date format error:', error);
+        return dateStr;
+    }
+};

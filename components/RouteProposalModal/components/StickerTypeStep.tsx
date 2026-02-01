@@ -1,8 +1,6 @@
 "use client";
 
 import React from 'react';
-import { STICKER_TYPES } from '@/lib/utils';
-import { StepButton } from './StepButton';
 import type { RouteProposalFormData } from '@/lib/routeProposalTypes';
 
 interface StickerTypeStepProps {
@@ -26,16 +24,6 @@ export function StickerTypeStep({
 
     return (
         <>
-            <div className="grid grid-cols-2 gap-2 mb-3">
-                {STICKER_TYPES.map((type) => (
-                    <StepButton
-                        key={type}
-                        label={type}
-                        isSelected={formValues.stickerType === type}
-                        onClick={() => onStickerTypeSelect(type)}
-                    />
-                ))}
-            </div>
             <div className="relative mb-2">
                 <input
                     value={formValues.customStickerType}

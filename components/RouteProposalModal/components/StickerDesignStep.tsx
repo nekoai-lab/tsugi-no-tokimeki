@@ -1,8 +1,6 @@
 "use client";
 
 import React from 'react';
-import { STICKER_DESIGNS } from '@/lib/utils';
-import { StepButton } from './StepButton';
 import type { RouteProposalFormData } from '@/lib/routeProposalTypes';
 
 interface StickerDesignStepProps {
@@ -16,7 +14,6 @@ interface StickerDesignStepProps {
 
 export function StickerDesignStep({
     formValues,
-    onStickerDesignSelect,
     onCustomStickerDesignChange,
     onSubmit,
     errors,
@@ -26,16 +23,6 @@ export function StickerDesignStep({
 
     return (
         <>
-            <div className="grid grid-cols-2 gap-2 mb-3">
-                {STICKER_DESIGNS.map((design) => (
-                    <StepButton
-                        key={design}
-                        label={design}
-                        isSelected={formValues.stickerDesign === design}
-                        onClick={() => onStickerDesignSelect(design)}
-                    />
-                ))}
-            </div>
             <div className="relative mb-2">
                 <input
                     value={formValues.customStickerDesign}

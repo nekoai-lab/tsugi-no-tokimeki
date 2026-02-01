@@ -20,6 +20,8 @@ import { StickerDesignStep } from './components/StickerDesignStep';
 import { TimeStep } from './components/TimeStep';
 import { ShopsStep } from './components/ShopsStep';
 import { CompleteStep } from './components/CompleteStep';
+import { StepButton } from './components/StepButton';
+import { CustomTimePicker } from './components/CustomTimePicker';
 
 export default function RouteProposalModal({ onClose, onConfirm, selectedDate }: RouteProposalModalProps) {
     const { user, userProfile, posts } = useApp();
@@ -29,6 +31,8 @@ export default function RouteProposalModal({ onClose, onConfirm, selectedDate }:
     const { formValues, setValue, trigger, errors, timeValidation } = useRouteProposalForm(selectedDate);
     const { messages, messagesEndRef, addUserMessage, addAIMessage, resetMessages } = useRouteProposalChat();
     const { step, setStep, isLoading, setIsLoading, inputRef } = useRouteProposalSteps();
+
+    const today = new Date().toISOString().split('T')[0];
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -280,7 +284,138 @@ export default function RouteProposalModal({ onClose, onConfirm, selectedDate }:
         setProposedTotalTime(null);
     };
 
-    const renderStepContent = () => {
+    // チャット内に表示する選択ボタン
+    const renderSelectionButtons = () => {
+        switch (step) {
+            case 'areas':
+                return (
+                    <div className="grid grid-cols-2 gap-2">
+                        {getAreaCandidates().map((area) => (
+                            <StepButton
+                                key={area}
+                                label={area}
+                                isSelected={formValues.areas.includes(area)}
+                                onClick={() => handleAreaToggle(area)}
+                            />
+                        ))}
+                    </div>
+                );
+
+            case 'date':
+                return (
+                    <>
+                        <div className="grid grid-cols-2 gap-2">
+                            <StepButton
+                                label="今日"
+                                isSelected={formValues.selectedDate === new Date().toISOString().split('T')[0]}
+                                onClick={() => handleDateSelect('today')}
+                            />
+                            <StepButton
+                                label="明日"
+                                isSelected={formValues.selectedDate === (() => {
+                                    const tomorrow = new Date();
+                                    tomorrow.setDate(tomorrow.getDate() + 1);
+                                    return tomorrow.toISOString().split('T')[0];
+                                })()}
+                                onClick={() => handleDateSelect('tomorrow')}
+                            />
+                        </div>
+                        <div className="space-y-3 mt-3">
+                            <input
+                                type="date"
+                                value={formValues.customDate || formValues.selectedDate || ''}
+                                onChange={(e) => {
+                                    if (e.target.value) {
+                                        handleDateSelect(e.target.value);
+                                    }
+                                }}
+                                min={today}
+                                className="w-full p-3 rounded-xl border-2 border-gray-200 bg-white text-gray-700 hover:border-pink-300 transition-all focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
+                            />
+                        </div>
+                    </>
+                );
+
+            case 'stickerType':
+                return (
+                    <div className="grid grid-cols-2 gap-2">
+                        {['フレークシール', 'ロールシール', 'ステッカー', 'マスキングテープ'].map((type) => (
+                            <StepButton
+                                key={type}
+                                label={type}
+                                isSelected={formValues.stickerType === type}
+                                onClick={() => handleStickerTypeSelect(type)}
+                            />
+                        ))}
+                    </div>
+                );
+
+            case 'stickerDesign':
+                return (
+                    <div className="grid grid-cols-2 gap-2">
+                        {['キャラクター', '動物', '植物', 'レトロ'].map((design) => (
+                            <StepButton
+                                key={design}
+                                label={design}
+                                isSelected={formValues.stickerDesign === design}
+                                onClick={() => handleStickerDesignSelect(design)}
+                            />
+                        ))}
+                    </div>
+                );
+
+            case 'time':
+                return (
+                    <>
+                        <div className="space-y-4 mb-3">
+                            <CustomTimePicker
+                                name="startTime"
+                                label="開始時刻"
+                                error={errors.startTime?.message}
+                                formValues={formValues}
+                                setValue={setValue}
+                            />
+                            <CustomTimePicker
+                                name="endTime"
+                                label="終了時刻"
+                                error={errors.startTime?.message}
+                                formValues={formValues}
+                                setValue={setValue}
+                            />
+                            {!formValues.customTime?.trim() && formValues.startTime && formValues.endTime && !timeValidation.isValid && (
+                                <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
+                                    <p className="text-sm text-red-600 font-medium">
+                                        {timeValidation.errorMessage}
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    </>
+                );
+
+
+
+            case 'shops':
+                return (
+                    <div className="grid grid-cols-2 gap-2">
+                        {['東急ハンズ', 'LOFT', '紀伊国屋書店', 'ヴィレッジヴァンガード'].map((shop) => (
+                            <StepButton
+                                key={shop}
+                                label={shop}
+                                isSelected={formValues.preferredShops.includes(shop)}
+                                onClick={() => handleShopToggle(shop)}
+                            />
+                        ))}
+                    </div>
+                );
+
+            default:
+                return null;
+        }
+    };
+
+    // 下部固定エリアに表示する入力欄と次へボタン
+    const renderBottomInput = () => {
         switch (step) {
             case 'areas':
                 return (
@@ -378,29 +513,44 @@ export default function RouteProposalModal({ onClose, onConfirm, selectedDate }:
                 </div>
 
                 {/* Chat Messages */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-4" style={{ paddingBottom: step !== 'complete' && !isLoading ? '180px' : '1rem' }}>
+                <div className="flex-1 overflow-y-auto p-4 space-y-4" style={{ paddingBottom: '200px' }}>
                     {messages.map((msg, idx) => (
-                        <ChatMessage key={idx} message={msg} />
+                        <div key={idx}>
+                            <ChatMessage message={msg} />
+
+                            {/* 最新のAIメッセージの直後に選択ボタンを表示 */}
+                            {msg.role === 'ai' &&
+                                idx === messages.length - 1 &&
+                                step !== 'complete' &&
+                                !isLoading && (
+                                    <div className="mt-3">
+                                        {renderSelectionButtons()}
+                                    </div>
+                                )}
+                        </div>
                     ))}
 
                     {isLoading && <LoadingIndicator />}
 
-                    {/* Confirm Buttons */}
-                    {proposedShops && proposedShops.length > 0 && step === 'complete' && (
-                        <CompleteStep
-                            onConfirm={handleConfirm}
-                            onAnotherProposal={handleAnotherProposal}
-                        />
-                    )}
-
                     <div ref={messagesEndRef} />
                 </div>
 
-                {/* Input Area - Fixed at bottom (LINE style) */}
+                {/* Input Area - Fixed at bottom */}
                 {step !== 'complete' && !isLoading && (
                     <div className="sticky bottom-0 bg-white border-t border-gray-100 p-4 pb-safe shadow-lg">
                         <div className="max-w-md mx-auto">
-                            {renderStepContent()}
+                            {renderBottomInput()}
+                        </div>
+                    </div>
+                )}
+
+                {proposedShops && proposedShops.length > 0 && step === 'complete' && (
+                    <div className="sticky bottom-0 bg-white border-t border-gray-100 p-4 pb-safe shadow-lg">
+                        <div className="max-w-md mx-auto">
+                            <CompleteStep
+                                onConfirm={handleConfirm}
+                                onAnotherProposal={handleAnotherProposal}
+                            />
                         </div>
                     </div>
                 )}
