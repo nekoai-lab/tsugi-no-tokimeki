@@ -153,14 +153,40 @@ sequenceDiagram
 ```
 tsugi-no-tokimeki/
 ├── app/
-│   ├── page.tsx              # メインアプリ (全UIコンポーネント)
-│   ├── layout.tsx            # ルートレイアウト
+│   ├── layout.tsx            # ルートレイアウト (AppProvider)
+│   ├── page.tsx              # ルートページ (リダイレクト処理)
 │   ├── globals.css           # グローバルスタイル (Tailwind)
+│   ├── (main)/               # ルートグループ (メインアプリ)
+│   │   ├── layout.tsx        # メインレイアウト (Header + Nav)
+│   │   ├── home/
+│   │   │   └── page.tsx      # For You画面 (/home)
+│   │   ├── feed/
+│   │   │   └── page.tsx      # Feed画面 (/feed)
+│   │   ├── calendar/
+│   │   │   └── page.tsx      # Calendar画面 (/calendar)
+│   │   └── profile/
+│   │       └── page.tsx      # Profile画面 (/profile)
+│   ├── onboarding/
+│   │   └── page.tsx          # オンボーディング (/onboarding)
 │   └── api/
 │       ├── analyze/          # 個別ユーザー分析 API
 │       │   └── route.ts
 │       └── analyze-all/      # Cloud Scheduler用 全ユーザー分析 API
 │           └── route.ts
+├── components/               # 再利用可能なコンポーネント
+│   ├── NavButton.tsx         # ナビゲーションボタン (Link使用)
+│   └── PostModal.tsx         # 投稿モーダル
+├── contexts/                 # React Context
+│   └── AppContext.tsx        # グローバル状態管理
+├── lib/                      # ユーティリティ・設定
+│   ├── firebase.ts           # Firebase初期化
+│   ├── types.ts              # TypeScript型定義
+│   └── utils.ts              # ヘルパー関数・定数
+├── screens/                  # 画面コンポーネント
+│   ├── ForYouScreen.tsx      # For You画面のコンテンツ
+│   ├── FeedScreen.tsx        # Feed画面のコンテンツ
+│   ├── CalendarScreen.tsx   # Calendar画面のコンテンツ
+│   └── ProfileScreen.tsx     # Profile画面のコンテンツ
 ├── docs/
 │   └── DEVELOPMENT_ROADMAP.md  # 開発ロードマップ
 ├── public/                   # 静的アセット
