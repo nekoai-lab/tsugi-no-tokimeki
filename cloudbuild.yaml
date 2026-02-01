@@ -13,6 +13,7 @@ steps:
           --build-arg NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=$$FIREBASE_STORAGE_BUCKET \
           --build-arg NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=$$FIREBASE_MESSAGING_SENDER_ID \
           --build-arg NEXT_PUBLIC_FIREBASE_APP_ID=$$FIREBASE_APP_ID \
+          --build-arg NEXT_PUBLIC_LIFF_ID=$_NEXT_PUBLIC_LIFF_ID \
           .
     secretEnv:
       - 'FIREBASE_API_KEY'
