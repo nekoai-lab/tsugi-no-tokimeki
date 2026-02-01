@@ -4,6 +4,7 @@ export interface UserProfile {
   favorites: string[];
   area: string;
   availability: Record<string, string[]>;
+  lineUserId?: string;
   updatedAt?: Timestamp;
 }
 

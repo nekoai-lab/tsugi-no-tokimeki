@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@google-cloud/vertexai": "^1.10.0",
+    "@line/liff": "^2.27.3",
     "firebase": "^12.8.0",
     "firebase-admin": "^13.6.0",
     "lucide-react": "^0.563.0",
