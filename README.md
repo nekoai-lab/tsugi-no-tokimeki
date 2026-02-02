@@ -248,7 +248,6 @@ tsugi-no-tokimeki/
 - [x] Vertex AI (Gemini 2.5) 連携
 - [x] Route Handlers (`/api/analyze`, `/api/analyze-all`)
 - [x] Cloud Scheduler 定期実行（朝8時 + 夕18時）
-- [ ] 転売対策 (posts_private コレクション)
 
 ### Phase 3: LINE連携 ✅ 完了
 
