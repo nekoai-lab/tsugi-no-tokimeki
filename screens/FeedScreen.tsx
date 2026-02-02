@@ -32,11 +32,10 @@ export default function FeedScreen() {
                         <div key={post.id} className="p-4 bg-white hover:bg-gray-50 transition-colors">
                             <div className="flex justify-between items-start mb-2">
                                 <div className="flex items-center gap-2">
-                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border ${post.status === 'bought' ? 'bg-green-50 border-green-200 text-green-700' :
-                                            post.status === 'soldout' ? 'bg-red-50 border-red-200 text-red-700' :
+                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border ${post.status === 'soldout' ? 'bg-red-50 border-red-200 text-red-700' :
                                                 'bg-blue-50 border-blue-200 text-blue-700'
                                         }`}>
-                                        {post.status === 'bought' ? '買えた！' : post.status === 'soldout' ? '売り切れ' : '目撃'}
+                                        {post.status === 'soldout' ? '売り切れ' : 'あった'}
                                     </span>
                                     <span className="text-xs font-medium text-gray-500">{post.character}</span>
                                 </div>
@@ -45,11 +44,17 @@ export default function FeedScreen() {
 
                             <p className="text-sm text-gray-800 mb-2 leading-relaxed">{post.text}</p>
 
-                            <div className="flex items-center gap-4 text-xs text-gray-400">
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-400">
                                 <div className="flex items-center gap-1">
                                     <MapPin className="w-3 h-3" />
                                     {post.areaMasked || 'エリア不明'}
                                 </div>
+                                {post.shopName && (
+                                    <div className="flex items-center gap-1">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
+                                        {post.shopName}
+                                    </div>
+                                )}
                                 <div className="flex items-center gap-1">
                                     <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
                                     {post.stickerType}

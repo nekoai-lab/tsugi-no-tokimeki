@@ -19,6 +19,8 @@ export interface Post {
     character: string;
     stickerType: string;
     areaMasked: string;
+    shopName?: string;
+    postDate?: string; // "2026-02-02T14:30"
     createdAt?: Timestamp;
 }
 

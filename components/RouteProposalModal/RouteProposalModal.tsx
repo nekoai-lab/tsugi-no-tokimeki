@@ -374,7 +374,7 @@ export default function RouteProposalModal({ onClose, onConfirm, selectedDate }:
             case 'stickerType':
                 return (
                     <div className="grid grid-cols-2 gap-2">
-                        {['フレークシール', 'ロールシール', 'ステッカー', 'マスキングテープ'].map((type) => (
+                        {['ボンボンドロップシール', 'プチドロップシール', 'ウォーターシール', 'マシュマロシール', 'Y2Kシール', 'タイルシール', 'フレークシール', '平面シール', 'ステッカー'].map((type) => (
                             <StepButton
                                 key={type}
                                 label={type}
