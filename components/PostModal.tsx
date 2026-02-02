@@ -5,118 +5,48 @@ import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db, appId } from '@/lib/firebase';
 import { useApp } from '@/contexts/AppContext';
 import { STICKER_TYPES, DEFAULT_POST_CHARACTERS, POST_SHOPS, PROFILE_AREAS } from '@/lib/utils';
-import { XCircle, RefreshCw, Send, ChevronDown } from 'lucide-react';
+import { XCircle, RefreshCw, Send } from 'lucide-react';
+import { ButtonSelect } from '@/components/shared/ButtonSelect';
+import { CustomDatePicker } from '@/components/shared/CustomDatePicker';
 
 interface PostModalProps {
   onClose: () => void;
 }
 
-/** ドロップダウン + カスタム入力 */
-function SelectWithCustom({
-  label,
-  value,
-  onChange,
-  options,
-  customPlaceholder,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  options: string[];
-  customPlaceholder: string;
-}) {
-  const [isCustom, setIsCustom] = useState(false);
-
-  return (
-    <div>
-      <label className="block text-xs font-bold text-gray-500 mb-1">{label}</label>
-      {!isCustom ? (
-        <div className="relative">
-          <select
-            value={options.includes(value) ? value : ''}
-            onChange={(e) => {
-              if (e.target.value === '__custom__') {
-                setIsCustom(true);
-                onChange('');
-              } else {
-                onChange(e.target.value);
-              }
-            }}
-            className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
-          >
-            {options.map(o => <option key={o} value={o}>{o}</option>)}
-            <option value="__custom__">その他（入力する）</option>
-          </select>
-          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-        </div>
-      ) : (
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            placeholder={customPlaceholder}
-            autoFocus
-            className="flex-1 p-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
-          />
-          <button
-            type="button"
-            onClick={() => {
-              setIsCustom(false);
-              onChange(options[0]);
-            }}
-            className="px-3 text-xs text-gray-500 hover:text-gray-700"
-          >
-            一覧
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/** 現在日時を 5分単位に丸めて "YYYY-MM-DDTHH:MM" 形式で返す */
-function getNowRounded5(): string {
+/** 現在日付を取得 */
+function getNowDate(): string {
   const now = new Date();
-  const minutes = Math.round(now.getMinutes() / 5) * 5;
-  now.setMinutes(minutes, 0, 0);
   const pad = (n: number) => n.toString().padStart(2, '0');
-  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 }
 
 export default function PostModal({ onClose }: PostModalProps) {
   const { user, userProfile } = useApp();
 
-  // キャラクター候補: プロフィールのお気に入り + カスタム → デフォルト
+  // キャラクター候補: プロフィールのお気に入り + カスタムのみ（デフォルトは含めない）
   const characterOptions = useMemo(() => {
     const profileChars = userProfile?.favorites || [];
     const customChars = userProfile?.customCharacters || [];
-    if (profileChars.length > 0 || customChars.length > 0) {
-      const seen = new Set<string>();
-      const result: string[] = [];
-      for (const c of [...profileChars, ...customChars, ...DEFAULT_POST_CHARACTERS]) {
-        if (!seen.has(c)) { seen.add(c); result.push(c); }
-      }
-      return result;
+    const seen = new Set<string>();
+    const result: string[] = [];
+    for (const c of [...profileChars, ...customChars]) {
+      if (!seen.has(c)) { seen.add(c); result.push(c); }
     }
-    return DEFAULT_POST_CHARACTERS;
+    return result;
   }, [userProfile?.favorites, userProfile?.customCharacters]);
 
-  // 駅（エリア）候補: プロフィールのエリア → デフォルト
+  // 駅（エリア）候補: プロフィールのエリア + カスタムのみ（デフォルトは含めない）
   const stationOptions = useMemo(() => {
     const profileAreas = userProfile?.areas && userProfile.areas.length > 0
       ? userProfile.areas
       : (userProfile?.area ? [userProfile.area] : []);
     const customAreas = userProfile?.customAreas || [];
-    if (profileAreas.length > 0 || customAreas.length > 0) {
-      const seen = new Set<string>();
-      const result: string[] = [];
-      for (const a of [...profileAreas, ...customAreas, ...PROFILE_AREAS]) {
-        if (!seen.has(a)) { seen.add(a); result.push(a); }
-      }
-      return result;
+    const seen = new Set<string>();
+    const result: string[] = [];
+    for (const a of [...profileAreas, ...customAreas]) {
+      if (!seen.has(a)) { seen.add(a); result.push(a); }
     }
-    return PROFILE_AREAS;
+    return result;
   }, [userProfile?.areas, userProfile?.area, userProfile?.customAreas]);
 
   const [status, setStatus] = useState<'seen' | 'soldout'>('seen');
@@ -124,7 +54,7 @@ export default function PostModal({ onClose }: PostModalProps) {
   const [stickerType, setStickerType] = useState(STICKER_TYPES[0]);
   const [station, setStation] = useState(stationOptions[0]);
   const [shopName, setShopName] = useState(POST_SHOPS[0]);
-  const [postDate, setPostDate] = useState(getNowRounded5());
+  const [postDate, setPostDate] = useState(getNowDate());
   const [text, setText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -140,7 +70,7 @@ export default function PostModal({ onClose }: PostModalProps) {
         stickerType,
         areaMasked: station || '不明',
         shopName,
-        postDate,
+        postDate: postDate,
         createdAt: serverTimestamp()
       });
       onClose();
@@ -184,61 +114,59 @@ export default function PostModal({ onClose }: PostModalProps) {
             ))}
           </div>
 
-          {/* Character */}
-          <SelectWithCustom
-            label="キャラクター"
-            value={character}
-            onChange={setCharacter}
-            options={characterOptions}
-            customPlaceholder="キャラ名を入力"
-          />
-
-          {/* Sticker type */}
-          <SelectWithCustom
-            label="シールの種類"
-            value={stickerType}
-            onChange={setStickerType}
-            options={STICKER_TYPES}
-            customPlaceholder="シールの種類を入力"
-          />
-
           {/* Station */}
-          <SelectWithCustom
+          <ButtonSelect
             label="場所（駅）"
             value={station}
             onChange={setStation}
             options={stationOptions}
-            customPlaceholder="駅名を入力"
           />
 
           {/* Shop */}
-          <SelectWithCustom
+          <ButtonSelect
             label="店名"
             value={shopName}
             onChange={setShopName}
-            options={POST_SHOPS}
-            customPlaceholder="店名を入力"
+            options={[]}
           />
 
-          {/* DateTime */}
-          <div>
-            <label className="block text-xs font-bold text-gray-500 mb-1">時間</label>
-            <input
-              type="datetime-local"
-              value={postDate}
-              onChange={(e) => setPostDate(e.target.value)}
-              step={300}
-              className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
-            />
-          </div>
+          {/* Date */}
+          <CustomDatePicker
+            label="日付"
+            value={postDate}
+            onChange={setPostDate}
+          />
+
+          {/* Sticker type */}
+          <ButtonSelect
+            label="シールの種類"
+            value={stickerType}
+            onChange={setStickerType}
+            options={[]}
+          />
+
+          {/* Character */}
+          <ButtonSelect
+            label="キャラクター"
+            value={character}
+            onChange={setCharacter}
+            options={characterOptions}
+          />
 
           {/* Detail text */}
           <div>
-            <label className="block text-xs font-bold text-gray-500 mb-1">詳細（任意）</label>
+            <label className="block text-xs font-bold text-gray-500 mb-1">
+              詳細（任意）{text.length > 0 && <span className="ml-2 text-xs text-gray-400">{text.length}/100文字</span>}
+            </label>
             <textarea
               value={text}
-              onChange={(e) => setText(e.target.value)}
+              onChange={(e) => {
+                if (e.target.value.length <= 100) {
+                  setText(e.target.value);
+                }
+              }}
               placeholder="詳細を教えてください（例：イオン3Fのにありました！残りわずかです。）"
+              maxLength={100}
               className="w-full h-20 p-3 bg-gray-50 border border-gray-200 rounded-xl resize-none text-sm focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
             />
           </div>
@@ -259,5 +187,3 @@ export default function PostModal({ onClose }: PostModalProps) {
     </div>
   );
 }
-
-

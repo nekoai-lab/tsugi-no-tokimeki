@@ -45,6 +45,18 @@ export default function FeedScreen() {
                             <p className="text-sm text-gray-800 mb-2 leading-relaxed">{post.text}</p>
 
                             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-400">
+                                {post.postDate && (
+                                    <div className="flex items-center gap-1">
+                                        {(() => {
+                                            const dt = new Date(post.postDate);
+                                            const month = dt.getMonth() + 1;
+                                            const day = dt.getDate();
+                                            const hours = dt.getHours().toString().padStart(2, '0');
+                                            const minutes = dt.getMinutes().toString().padStart(2, '0');
+                                            return `${month}/${day} ${hours}:${minutes}`;
+                                        })()}
+                                    </div>
+                                )}
                                 <div className="flex items-center gap-1">
                                     <MapPin className="w-3 h-3" />
                                     {post.areaMasked || 'エリア不明'}

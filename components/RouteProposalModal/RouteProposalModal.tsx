@@ -20,8 +20,9 @@ import { StickerDesignStep } from './components/StickerDesignStep';
 import { TimeStep } from './components/TimeStep';
 import { ShopsStep } from './components/ShopsStep';
 import { CompleteStep } from './components/CompleteStep';
-import { StepButton } from './components/StepButton';
-import { CustomTimePicker } from './components/CustomTimePicker';
+import { StepButton } from '@/components/shared/StepButton';
+import { CustomTimePicker } from '@/components/shared/CustomTimePicker';
+import { CustomDatePicker } from '@/components/shared/CustomDatePicker';
 
 export default function RouteProposalModal({ onClose, onConfirm, selectedDate }: RouteProposalModalProps) {
     const { user, userProfile, posts } = useApp();
@@ -356,16 +357,15 @@ export default function RouteProposalModal({ onClose, onConfirm, selectedDate }:
                             />
                         </div>
                         <div className="space-y-3 mt-3">
-                            <input
-                                type="date"
+                            <CustomDatePicker
+                                label="その他の日付"
                                 value={formValues.customDate || formValues.selectedDate || ''}
-                                onChange={(e) => {
-                                    if (e.target.value) {
-                                        handleDateSelect(e.target.value);
+                                onChange={(date) => {
+                                    if (date) {
+                                        handleDateSelect(date);
                                     }
                                 }}
-                                min={today}
-                                className="w-full p-3 rounded-xl border-2 border-gray-200 bg-white text-gray-700 hover:border-pink-300 transition-all focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
+                                minDate={today}
                             />
                         </div>
                     </>

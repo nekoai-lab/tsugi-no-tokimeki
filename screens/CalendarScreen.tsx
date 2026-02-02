@@ -125,7 +125,6 @@ export default function CalendarScreen() {
                 <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
                     <CalendarIcon className="w-5 h-5 text-pink-500" />
                     次の行動スケジュール
-                    <span className="text-[10px] bg-pink-100 text-pink-600 px-2 py-0.5 rounded-full">v3 New</span>
                 </h2>
 
                 {routeProposals.length === 0 ? (
