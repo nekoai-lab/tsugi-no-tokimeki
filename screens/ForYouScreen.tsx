@@ -114,7 +114,7 @@ export default function ForYouScreen() {
                     className="w-full bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-bold py-4 px-6 rounded-2xl shadow-lg transition-all transform hover:scale-[1.02] flex items-center justify-center gap-2"
                 >
                     <Route className="w-5 h-5" />
-                    今日のルートを提案してもらう
+                    AIにルートを提案してもらう
                 </button>
             </section>
         </div>

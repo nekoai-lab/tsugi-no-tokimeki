@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { XCircle } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { saveRouteProposal } from '@/lib/routeProposalService';
-import { AREAS } from '@/lib/utils';
+import { AREAS, CHARACTERS } from '@/lib/utils';
 import type { Shop } from '@/lib/types';
 import { useRouteProposalForm } from '@/hooks/useRouteProposalForm';
 import { useRouteProposalChat } from '@/hooks/useRouteProposalChat';
@@ -40,10 +40,45 @@ export default function RouteProposalModal({ onClose, onConfirm, selectedDate }:
 
     // プロフィールのエリアを参考にした候補を取得
     const getAreaCandidates = () => {
-        const profileArea = userProfile?.area || '';
-        const candidates = profileArea ? [profileArea, ...AREAS.filter(a => a !== profileArea)] : AREAS;
+        const profileAreas = userProfile?.areas && userProfile.areas.length > 0
+            ? userProfile.areas
+            : (userProfile?.area ? [userProfile.area] : []);
+        const customAreas = userProfile?.customAreas || [];
+        // Profile areas first, then standard areas, then custom areas
+        const seen = new Set<string>();
+        const candidates: string[] = [];
+        for (const a of [...profileAreas, ...AREAS, ...customAreas]) {
+            if (!seen.has(a)) {
+                seen.add(a);
+                candidates.push(a);
+            }
+        }
         return candidates;
     };
+
+    const getCharactersCandidates = () => {
+        // プロフィールのお気に入りキャラを取得（favorites を使用）
+        const profileCharacters = userProfile?.favorites && userProfile.favorites.length > 0
+            ? userProfile.favorites
+            : [];
+        
+        // カスタム入力されたキャラを取得
+        const customCharacters = userProfile?.customCharacters || [];
+        
+        // 重複を除いて結合（プロフィール → デフォルト → カスタムの順）
+        const seen = new Set<string>();
+        const candidates: string[] = [];
+        
+        for (const char of [...profileCharacters, ...CHARACTERS, ...customCharacters]) {
+            if (!seen.has(char)) {
+                seen.add(char);
+                candidates.push(char);
+            }
+        }
+        
+        return candidates;
+    };
+
 
     const handleAreaToggle = (area: string) => {
         const currentAreas = formValues.areas || [];
@@ -353,12 +388,12 @@ export default function RouteProposalModal({ onClose, onConfirm, selectedDate }:
             case 'stickerDesign':
                 return (
                     <div className="grid grid-cols-2 gap-2">
-                        {['キャラクター', '動物', '植物', 'レトロ'].map((design) => (
+                        {getCharactersCandidates().map((char) => (
                             <StepButton
-                                key={design}
-                                label={design}
-                                isSelected={formValues.stickerDesign === design}
-                                onClick={() => handleStickerDesignSelect(design)}
+                                key={char}
+                                label={char}
+                                isSelected={formValues.stickerDesign === char}
+                                onClick={() => handleStickerDesignSelect(char)}
                             />
                         ))}
                     </div>

@@ -3,6 +3,9 @@ import { Timestamp } from 'firebase/firestore';
 export interface UserProfile {
     favorites: string[];
     area: string;
+    areas?: string[];
+    customAreas?: string[];
+    customCharacters?: string[];
     availability: Record<string, string[]>;
     lineUserId?: string;
     updatedAt?: Timestamp;

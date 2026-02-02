@@ -30,3 +30,6 @@ export const TIME_SLOTS = [
 ];
 export const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'];
 
+export const PROFILE_AREAS = ['新宿', '渋谷', '池袋', '原宿', '表参道', '六本木', '銀座', '秋葉原', '上野', '浅草'];
+export const PROFILE_CHARACTERS = ['エンジェルブルー', 'メゾピアノ', 'ディジーラバーズ', 'ポンポネット', 'ブルークロス'];
+
