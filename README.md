@@ -534,8 +534,9 @@ LINE_CHANNEL_SECRET=your_channel_secret
 
 ## 🛡️ License & Credit
 
-- **Development**: nekoai-lab
-- **Powered by**: Google Gemini Code Assistant
+- **Development**: [yumemiru-masomi](https://github.com/yumemiru-masomi) × [nekoai-lab](https://github.com/nekoai-lab)
+- **Event**: [第4回 Agentic AI Hackathon with Google Cloud](https://zenn.dev/hackathons/google-cloud-japan-ai-hackathon-vol4)
+- **Powered by**: Google Cloud (Vertex AI, Cloud Run, Firestore)
 - **License**: MIT
 
 ---
@@ -626,4 +627,4 @@ git push origin feature/your-feature-name
 
 ---
 
-*Created with 💖 by nekoai-lab*
+*Created with 💖 by yumemiru-masomi & nekoai-lab*
