@@ -23,7 +23,7 @@ function getNowDate(): string {
 export default function PostModal({ onClose }: PostModalProps) {
   const { user, userProfile } = useApp();
 
-  // キャラクター候補: プロフィールのお気に入り + カスタムのみ（デフォルトは含めない）
+  // キャラクター候補: プロフィールのお気に入り + カスタム。なければデフォルトを表示
   const characterOptions = useMemo(() => {
     const profileChars = userProfile?.favorites || [];
     const customChars = userProfile?.customCharacters || [];
@@ -32,10 +32,11 @@ export default function PostModal({ onClose }: PostModalProps) {
     for (const c of [...profileChars, ...customChars]) {
       if (!seen.has(c)) { seen.add(c); result.push(c); }
     }
-    return result;
+    // プロフィールに何もない場合はデフォルトを表示
+    return result.length > 0 ? result : DEFAULT_POST_CHARACTERS;
   }, [userProfile?.favorites, userProfile?.customCharacters]);
 
-  // 駅（エリア）候補: プロフィールのエリア + カスタムのみ（デフォルトは含めない）
+  // 駅（エリア）候補: プロフィールのエリア + カスタム。なければデフォルトを表示
   const stationOptions = useMemo(() => {
     const profileAreas = userProfile?.areas && userProfile.areas.length > 0
       ? userProfile.areas
@@ -46,8 +47,35 @@ export default function PostModal({ onClose }: PostModalProps) {
     for (const a of [...profileAreas, ...customAreas]) {
       if (!seen.has(a)) { seen.add(a); result.push(a); }
     }
-    return result;
+    // プロフィールに何もない場合はデフォルトを表示
+    return result.length > 0 ? result : PROFILE_AREAS;
   }, [userProfile?.areas, userProfile?.area, userProfile?.customAreas]);
+
+  // 店名候補: プロフィールの店名 + カスタム。なければデフォルトを表示
+  const shopOptions = useMemo(() => {
+    const profileShops = userProfile?.preferredShops || [];
+    const customShops = userProfile?.customShops || [];
+    const seen = new Set<string>();
+    const result: string[] = [];
+    for (const s of [...profileShops, ...customShops]) {
+      if (!seen.has(s)) { seen.add(s); result.push(s); }
+    }
+    // プロフィールに何もない場合はデフォルトを表示
+    return result.length > 0 ? result : POST_SHOPS;
+  }, [userProfile?.preferredShops, userProfile?.customShops]);
+
+  // シールの種類候補: プロフィールのシールの種類 + カスタム。なければデフォルトを表示
+  const stickerTypeOptions = useMemo(() => {
+    const profileTypes = userProfile?.preferredStickerTypes || [];
+    const customTypes = userProfile?.customStickerTypes || [];
+    const seen = new Set<string>();
+    const result: string[] = [];
+    for (const t of [...profileTypes, ...customTypes]) {
+      if (!seen.has(t)) { seen.add(t); result.push(t); }
+    }
+    // プロフィールに何もない場合はデフォルトを表示
+    return result.length > 0 ? result : STICKER_TYPES;
+  }, [userProfile?.preferredStickerTypes, userProfile?.customStickerTypes]);
 
   const [status, setStatus] = useState<'seen' | 'soldout'>('seen');
   const [character, setCharacter] = useState(characterOptions[0]);
@@ -127,7 +155,7 @@ export default function PostModal({ onClose }: PostModalProps) {
             label="店名"
             value={shopName}
             onChange={setShopName}
-            options={[]}
+            options={shopOptions}
           />
 
           {/* Date */}
@@ -142,7 +170,7 @@ export default function PostModal({ onClose }: PostModalProps) {
             label="シールの種類"
             value={stickerType}
             onChange={setStickerType}
-            options={[]}
+            options={stickerTypeOptions}
           />
 
           {/* Character */}

@@ -6,6 +6,10 @@ export interface UserProfile {
     areas?: string[];
     customAreas?: string[];
     customCharacters?: string[];
+    preferredShops?: string[];
+    customShops?: string[];
+    preferredStickerTypes?: string[];
+    customStickerTypes?: string[];
     availability: Record<string, string[]>;
     lineUserId?: string;
     updatedAt?: Timestamp;

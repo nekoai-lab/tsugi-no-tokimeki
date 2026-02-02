@@ -270,7 +270,7 @@ export async function POST() {
         result.decision === 'go' &&
         result.userProfile?.lineUserId
       ) {
-        const character = result.userProfile.favorites[0] || '推しキャラ';
+        const character = result.userProfile.favorites[0] || 'お気に入りのキャラ';
         const area = result.userProfile.area || '近くのエリア';
         const reasons = result.reasons || ['目撃情報があります！'];
 
