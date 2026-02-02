@@ -53,6 +53,7 @@ export function CustomTimePicker({
     const handleTimeChange = (newHour: number, newMinute: number) => {
         const formattedTime = `${String(newHour).padStart(2, '0')}:${String(newMinute).padStart(2, '0')}`;
         setValue(name, formattedTime, { shouldValidate: true });
+        setIsOpen(false); // タップしたら即座に閉じる
     };
 
     return (
@@ -119,15 +120,6 @@ export function CustomTimePicker({
                             ))}
                         </div>
                     </div>
-
-                    {/* 完了ボタン */}
-                    <button
-                        type="button"
-                        onClick={() => setIsOpen(false)}
-                        className="w-full py-3 bg-pink-500 text-white font-bold hover:bg-pink-600 transition-colors"
-                    >
-                        完了
-                    </button>
                 </div>
             )}
         </div>

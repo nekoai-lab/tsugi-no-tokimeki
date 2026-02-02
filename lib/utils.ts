@@ -17,10 +17,12 @@ export const getRelativeTime = (date: Timestamp | Date | null | undefined): stri
   return formatDate(d);
 };
 
-export const CHARACTERS = ['エンジェルブルー', 'メゾピアノ', 'デイジーラバーズ', 'ポンポネット', 'ブルークロス'];
-export const STICKER_TYPES = ['ボンボンドロップ', 'プチドロップ', 'タイルシール', 'ノーマル', '平面シール'];
-export const STICKER_DESIGNS = ['たまごっち', 'メゾピアノ', '和柄', 'エンジェルブルー', 'デイジーラバーズ', 'ポンポネット', 'ブルークロス'];
-export const AREAS = ['新宿', '渋谷', '池袋', '東京', '横浜', '大宮'];
+export const CHARACTERS = ['たまごっち', 'サンリオ', 'ディズニー', 'しずくちゃん', 'あわわちゃん', 'メゾピアノ'];;
+export const STICKER_TYPES = ['ボンボンドロップシール', 'プチドロップシール', 'ウォーターシール', 'マシュマロシール', 'Y2Kシール', 'タイルシール', 'フレークシール', '平面シール', 'ステッカー'];
+export const DEFAULT_POST_CHARACTERS = ['たまごっち', 'サンリオ', 'ディズニー', 'しずくちゃん', 'あわわちゃん', 'メゾピアノ'];
+export const POST_SHOPS = ['東急ハンズ', 'LOFT', 'ドンキホーテ', '雑貨屋', 'イオン', 'ビレッジバンガード'];
+export const STICKER_DESIGNS = ['たまごっち', 'サンリオ', 'ディズニー', 'しずくちゃん', 'あわわちゃん', 'メゾピアノ'];
+export const AREAS = ['新宿', '渋谷', '池袋', '横浜', '大宮'];
 export const PREFERRED_SHOPS = ['東急ハンズ', 'LOFT', '雑貨屋さん', '紀伊国屋書店', 'トイザらス', 'セリア', 'ダイソー'];
 export const TIME_SLOTS = [
   '9:00', '9:30', '10:00', '10:30', '11:00', '11:30',
@@ -29,4 +31,7 @@ export const TIME_SLOTS = [
   '18:00', '18:30', '19:00', '19:30', '20:00'
 ];
 export const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'];
+
+export const PROFILE_AREAS = ['新宿', '渋谷', '池袋', '原宿', '表参道', '六本木', '銀座', '秋葉原', '上野', '浅草'];
+export const PROFILE_CHARACTERS = ['たまごっち', 'サンリオ', 'ディズニー', 'しずくちゃん', 'あわわちゃん', 'メゾピアノ'];
 

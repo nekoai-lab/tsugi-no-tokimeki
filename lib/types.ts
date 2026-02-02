@@ -3,6 +3,13 @@ import { Timestamp } from 'firebase/firestore';
 export interface UserProfile {
     favorites: string[];
     area: string;
+    areas?: string[];
+    customAreas?: string[];
+    customCharacters?: string[];
+    preferredShops?: string[];
+    customShops?: string[];
+    preferredStickerTypes?: string[];
+    customStickerTypes?: string[];
     availability: Record<string, string[]>;
     lineUserId?: string;
     updatedAt?: Timestamp;
@@ -16,6 +23,8 @@ export interface Post {
     character: string;
     stickerType: string;
     areaMasked: string;
+    shopName?: string;
+    postDate?: string; // "2026-02-02T14:30"
     createdAt?: Timestamp;
 }
 
