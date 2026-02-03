@@ -29,7 +29,7 @@ export default function MainLayout({
     // ローディング中または未認証の場合はローディング画面を表示
     if (loading || !user || !userProfile) {
         return (
-            <div className="flex h-screen w-full items-center justify-center bg-pink-50">
+            <div className="flex h-screen w-full items-center justify-center bg-white">
                 <div className="flex flex-col items-center">
                     <div className="w-10 h-10 text-pink-500 animate-bounce">✨</div>
                     <p className="mt-4 text-pink-400 font-bold text-sm tracking-widest">LOADING...</p>
@@ -73,7 +73,10 @@ export default function MainLayout({
             </button>
 
             {/* Bottom Navigation */}
-            <nav className="absolute bottom-0 w-full bg-white border-t border-gray-100 px-6 py-3 pb-safe flex justify-between items-center z-20">
+            <nav
+                className="absolute bottom-0 w-full bg-white border-t border-gray-100 px-6 py-3 flex justify-between items-center z-20"
+                style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
+            >
                 <NavButton href="/home" icon={Sparkles} label="For You" />
                 <NavButton href="/feed" icon={Home} label="Feed" />
                 <NavButton href="/calendar" icon={CalendarIcon} label="Calendar" />
