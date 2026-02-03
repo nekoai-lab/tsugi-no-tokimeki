@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { VertexAI, type Tool } from '@google-cloud/vertexai';
 import type { Shop } from '@/lib/types';
 
 interface RouteProposalRequest {
@@ -20,162 +21,203 @@ interface RouteProposalRequest {
   userArea: string;
 }
 
-/**
- * Google Vertex AIを使用してルート提案を生成するAPI
- * 
- * TODO: Vertex AIの実装方法
- * 1. @google-cloud/vertexai パッケージをインポート
- * 2. Vertex AIクライアントを初期化
- * 3. プロンプトを構築してgenerateContentを呼び出し
- * 4. レスポンスをパースしてShop[]形式に変換
- * 
- * 例:
- * import { VertexAI } from '@google-cloud/vertexai';
- * const vertexAI = new VertexAI({ project: 'your-project-id', location: 'us-central1' });
- * const model = vertexAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
- * const result = await model.generateContent(prompt);
- */
-export async function POST(request: NextRequest) {
-  try {
-    const body: RouteProposalRequest = await request.json();
-    const { areas, stickerType, stickerDesign, startTime, endTime, preferredShops, userPosts, favorites, userArea } = body;
+const SYSTEM_INSTRUCTION = `あなたはシールを探すユーザーのために最適なルートを調べてあげる明るくフレンドリーなアシスタントです。
 
-    // TODO: Vertex AI実装
-    // const vertexAI = new VertexAI({ 
-    //   project: process.env.GOOGLE_CLOUD_PROJECT_ID,
-    //   location: 'us-central1'
-    // });
-    // const model = vertexAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
-    // 
-    // const prompt = buildPrompt(areas, stickerType, stickerDesign, startTime, endTime, preferredShops, userPosts, favorites, userArea);
-    // const result = await model.generateContent(prompt);
-    // const shops = parseAIResponse(result.response.text());
+ユーザーのシール探しの旅を全力で応援します。
 
-    // モックデータを返す（開発用）
-    const shops: Shop[] = generateMockShops(areas, stickerType, stickerDesign, startTime, endTime, preferredShops, favorites);
+【口調のルール】
 
-    const totalTravelTime = shops.reduce((sum, shop, index) => {
-      if (index === 0) return sum;
-      return sum + (shop.travelTimeFromPrevious || 0);
-    }, 0);
+- 「お待たせ！考えてみたよ！」で始める
+- 「〜かな」「〜だよ」など親しみやすい口調
+- 最後は必ず応援メッセージで締める
 
-    return NextResponse.json({
-      shops,
-      totalTravelTime,
+【出力形式】
+必ず以下のマークダウン形式で出力してください：
+
+# お待たせ！考えてみたよ！
+## 📍 今日のおすすめルート
+
+### ⏰ タイムテーブル
+
+**10:00-10:20** 📍 渋谷LOFT
+- おすすめポイントをここに書く
+
+🚶‍♀️ 移動時間: 5分
+
+**10:25-11:45** 📍 渋谷東急ハンズ
+- おすすめポイントをここに書く
+
+ポイント
+- 一店舗あたり、約20分~30分程度の滞在で考えてください
+- 12:00-13:00あたりの時間にお昼の提案、17:00-18:00あたりに夜ご飯の提案も考えてみてください。
+- その時間付近で開始時間が設定されていたら上記の提案はいらないです。
+- 過去の情報を元に、根拠があればそれを提示できるときはしてください。
+  例)1月22日にたまごっちの母ンボンドロップシールが発売されていたので、入荷される可能性はありますが、直近1ヶ月以内で入荷してるので確率は低いです。
+
+### 💡 補足情報
+
+直近の在庫情報やおすすめポイントをここに
+
+### 🎉 応援メッセージ
+
+自分のトキメクシールに出会えることを願ってるよ！
+
+【重要】
+レスポンスの最後に、以下の形式でJSON部を必ず出力してください。JSONは \`\`\`json と \`\`\` で囲んでください。
+このJSONはシステムが自動的にパースして保存します。ユーザーには見えません。
+
+\`\`\`json
+{
+  "shops": [
+    {
+      "name": "店舗名",
+      "time": "HH:MM",
+      "description": "この店舗のおすすめポイント",
+      "travelTimeFromPrevious": null or 数値（分）
+    }
+  ],
+  "totalTravelTime": 合計移動時間（分）
+}
+\`\`\``;
+
+// Vertex AI initialization
+const initVertexAI = () => {
+  const projectId = process.env.GOOGLE_CLOUD_PROJECT || 'carbon-zone-485401-e6';
+  const location = 'asia-northeast1';
+
+  // 環境変数から認証情報を読み込む
+  const credentialsPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+  
+  if (!credentialsPath && !process.env.GOOGLE_CLOUD_CREDENTIALS) {
+    throw new Error('認証情報が設定されていません');
+  }
+
+  if (credentialsPath) {
+    return new VertexAI({
+      project: projectId,
+      location: location,
     });
-  } catch (error) {
-    console.error('Route proposal API error:', error);
-    return NextResponse.json(
-      { error: 'ルート提案の生成に失敗しました' },
-      { status: 500 }
-    );
-  }
-}
-
-/**
- * モックデータ生成（開発用）
- * TODO: Vertex AI実装後は削除
- */
-function generateMockShops(
-  areas: string[],
-  stickerType: string,
-  stickerDesign: string,
-  startTime: string,
-  endTime: string,
-  preferredShops: string[],
-  favorites: string[]
-): Shop[] {
-  const area = areas[0] || '新宿';
-  const favoriteChar = stickerDesign || favorites[0] || 'メゾピアノ';
-  
-  // 時間帯から店舗訪問時刻を計算
-  const startHour = parseInt(startTime.split(':')[0]) || 10;
-  const endHour = parseInt(endTime.split(':')[0]) || 16;
-  const shopCount = Math.min(3, Math.floor((endHour - startHour) / 2));
-  
-  const times: string[] = [];
-  for (let i = 0; i < shopCount; i++) {
-    const hour = startHour + i * 2;
-    times.push(`${hour.toString().padStart(2, '0')}:00`);
   }
 
-  // 希望店舗があればそれを使用、なければデフォルト
-  const shopNames = preferredShops.length > 0 
-    ? preferredShops.slice(0, shopCount)
-    : [
-        `${area}・東急ハンズ`,
-        `${area}LOFT`,
-        '紀伊国屋書店' + (area === '新宿' ? '新宿本店' : ''),
-      ].slice(0, shopCount);
+  return new VertexAI({
+    project: projectId,
+    location: location,
+  });
+};
 
-  return shopNames.map((name, index) => ({
-    id: `shop-${index}`,
-    name: name.includes(area) ? name : `${area}・${name}`,
-    time: times[index] || `${(startHour + index * 2).toString().padStart(2, '0')}:00`,
-    description: index === 0
-      ? `${favoriteChar}の${stickerType}が過去に入荷していました`
-      : index === 1
-      ? `${stickerType}の新作がある可能性が高いです`
-      : '文房具コーナーにシール充実',
-    location: {
-      lat: 35.6938 + Math.random() * 0.01,
-      lng: 139.7034 + Math.random() * 0.01,
-    },
-    travelTimeFromPrevious: index === 0 ? undefined : index === 1 ? 3 : 8,
-  }));
-}
+function buildUserMessage(body: RouteProposalRequest): string {
+  const { areas, stickerType, stickerDesign, startTime, endTime, preferredShops, userPosts, favorites, userArea } = body;
 
-/**
- * AIプロンプト構築（将来の実装用）
- */
-function buildPrompt(
-  areas: string[],
-  stickerType: string,
-  stickerDesign: string,
-  startTime: string,
-  endTime: string,
-  preferredShops: string[],
-  userPosts: RouteProposalRequest['userPosts'],
-  favorites: string[],
-  userArea: string
-): string {
   const recentPosts = userPosts
     .filter(p => p.status === 'seen' || p.status === 'bought')
     .slice(0, 10)
     .map(p => `- ${p.areaMasked}で${p.character}を${p.status === 'bought' ? '購入' : '目撃'}`)
     .join('\n');
 
-  return `あなたはシール収集家のためのルート提案AIです。
+  return `以下の条件でシール探しのスケジュールを考えてください。Google検索で最新の店舗情報も調べてね！
 
-ユーザー情報：
-- お気に入りキャラ: ${favorites.join(', ')}
-- よく行くエリア: ${userArea}
-- 過去の投稿:
-${recentPosts || 'まだ投稿がありません'}
+【ユーザー情報】
+- お気に入りキャラ: ${favorites.join(', ') || '特になし'}
+- よく行くエリア: ${userArea || '特になし'}
 
-リクエスト：
-- エリア: ${areas.join('、')}
-- シールの種類: ${stickerType}
-- シールの柄: ${stickerDesign}
-- 時間: ${startTime}〜${endTime}
-- 希望店舗: ${preferredShops.length > 0 ? preferredShops.join('、') : '特になし'}
+【リクエスト】
+- 場所: ${areas.join('、')}
+- キャラクター: ${stickerDesign || '特になし'}
+- シールの種類: ${stickerType || '特になし'}
+- スケジュールを組む日程: 本日
+- スケジュールを組む時間: ${startTime}〜${endTime}
+- 特に回りたいお店: ${preferredShops.length > 0 ? preferredShops.join('、') : '特になし'}
 
-${areas.join('、')}エリアで効率的に${stickerDesign}の${stickerType}を探せる店舗のルートを提案してください。
-以下の形式でJSONを返してください：
+【直近の目撃情報】
+${recentPosts || '（まだ目撃情報がありません）'}
 
-{
-  "shops": [
-    {
-      "name": "店舗名",
-      "time": "10:00",
-      "description": "この店舗の特徴やシールの情報",
-      "location": {"lat": 35.6938, "lng": 139.7034},
-      "travelTimeFromPrevious": 5
+この情報をもとに、効率的なルートとタイムテーブルを提案してください！`;
+}
+
+function parseAIResponse(responseText: string): {
+  message: string;
+  shops: Shop[];
+  totalTravelTime: number;
+} {
+  // Extract JSON block from the response
+  const jsonMatch = responseText.match(/```json\s*([\s\S]*?)\s*```/);
+
+  let shops: Shop[] = [];
+  let totalTravelTime = 0;
+
+  if (jsonMatch) {
+    try {
+      const parsed = JSON.parse(jsonMatch[1]);
+      shops = (parsed.shops || []).map((shop: { name: string; time: string; description: string; travelTimeFromPrevious?: number }, index: number) => ({
+        id: `shop-${index}`,
+        name: shop.name,
+        time: shop.time || '',
+        description: shop.description || '',
+        location: {
+          lat: 35.6938 + Math.random() * 0.01,
+          lng: 139.7034 + Math.random() * 0.01,
+        },
+        travelTimeFromPrevious: shop.travelTimeFromPrevious || undefined,
+      }));
+      totalTravelTime = parsed.totalTravelTime || 0;
+    } catch (e) {
+      console.error('Failed to parse JSON from AI response:', e);
     }
-  ],
-  "totalTravelTime": 20
+  }
+
+  // Remove the JSON block from the message shown to the user
+  const message = responseText
+    .replace(/```json\s*[\s\S]*?\s*```/, '')
+    .trim();
+
+  return { message, shops, totalTravelTime };
 }
 
-各店舗は移動時間を考慮して効率的な順序で並べてください。`;
-}
+export async function POST(request: NextRequest) {
+  try {
+    const body: RouteProposalRequest = await request.json();
 
+    const vertexAI = initVertexAI();
+
+    const generativeModel = vertexAI.getGenerativeModel({
+      model: 'gemini-2.5-flash',
+      systemInstruction: {
+        role: 'system',
+        parts: [{ text: SYSTEM_INSTRUCTION }],
+      },
+    });
+
+    const userMessage = buildUserMessage(body);
+
+    const googleSearchTool: Tool = {
+      googleSearch: {},
+    } as Tool;
+
+    const result = await generativeModel.generateContent({
+      contents: [{ role: 'user', parts: [{ text: userMessage }] }],
+      tools: [googleSearchTool],
+    });
+
+    const responseText = result.response.candidates?.[0]?.content?.parts
+      ?.map(part => part.text || '')
+      .join('') || '';
+
+    if (!responseText) {
+      throw new Error('Empty response from Vertex AI');
+    }
+
+    const { message, shops, totalTravelTime } = parseAIResponse(responseText);
+
+    return NextResponse.json({
+      message,
+      shops,
+      totalTravelTime,
+    });
+  } catch (error) {
+    console.error('Route proposal API error:', error);
+    return NextResponse.json(
+      { error: 'ルート提案の生成に失敗しました', details: String(error) },
+      { status: 500 }
+    );
+  }
+}

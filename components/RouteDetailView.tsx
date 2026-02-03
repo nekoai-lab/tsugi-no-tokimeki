@@ -1,23 +1,23 @@
 "use client";
 
-import React from 'react';
-import { ArrowLeft, MapPin, Clock, CheckCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { ArrowLeft, MapPin, Clock, Trash2 } from 'lucide-react';
 import type { RouteProposal } from '@/lib/types';
 import { WEEKDAYS } from '@/lib/utils';
 
 interface RouteDetailViewProps {
     proposal: RouteProposal;
     onBack: () => void;
-    onConfirm?: () => void;
-    onRequestAnother?: () => void;
+    onDelete?: () => Promise<void>;
 }
 
 export default function RouteDetailView({
     proposal,
     onBack,
-    onConfirm,
-    onRequestAnother,
+    onDelete,
 }: RouteDetailViewProps) {
+    const [isDeleting, setIsDeleting] = useState(false);
+
     const date = new Date(proposal.date);
     const dateStr = `${date.getMonth() + 1}/${date.getDate()} (${WEEKDAYS[date.getDay()]})`;
 
@@ -25,7 +25,6 @@ export default function RouteDetailView({
         if (proposal.startTime && proposal.endTime) {
             return `${proposal.startTime}〜${proposal.endTime}`;
         }
-        // 古いデータ構造のフォールバック
         if (proposal.timeSlot) {
             const timeSlotLabel = { morning: '午前', afternoon: '午後', allday: '1日中' }[proposal.timeSlot];
             return timeSlotLabel;
@@ -37,11 +36,24 @@ export default function RouteDetailView({
         if (proposal.areas && proposal.areas.length > 0) {
             return proposal.areas.join('、');
         }
-        // 古いデータ構造のフォールバック
         if (proposal.area) {
             return proposal.area;
         }
         return 'エリア未設定';
+    };
+
+    const handleDelete = async () => {
+        if (!onDelete) return;
+        if (!confirm('このルートを削除しますか？')) return;
+
+        setIsDeleting(true);
+        try {
+            await onDelete();
+        } catch (error) {
+            console.error('Delete error:', error);
+            alert('削除に失敗しました');
+            setIsDeleting(false);
+        }
     };
 
     return (
@@ -82,12 +94,6 @@ export default function RouteDetailView({
                                 </div>
                             )}
                         </div>
-                        {proposal.confirmed && (
-                            <div className="mt-2 flex items-center gap-2 text-green-600">
-                                <CheckCircle className="w-4 h-4" />
-                                <span className="text-xs font-bold">✅確定済み</span>
-                            </div>
-                        )}
                     </div>
 
                     {/* Shops List */}
@@ -141,28 +147,19 @@ export default function RouteDetailView({
                 </div>
             </div>
 
-            {/* Action Buttons */}
-            {!proposal.confirmed && (onConfirm || onRequestAnother) && (
-                <div className="p-4 border-t border-gray-100 space-y-2">
-                    {onConfirm && (
-                        <button
-                            onClick={onConfirm}
-                            className="w-full bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 rounded-xl transition-colors"
-                        >
-                            このルートで行く！
-                        </button>
-                    )}
-                    {onRequestAnother && (
-                        <button
-                            onClick={onRequestAnother}
-                            className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 rounded-xl transition-colors"
-                        >
-                            別の提案をもらう
-                        </button>
-                    )}
+            {/* Delete Button */}
+            {onDelete && (
+                <div className="p-4 border-t border-gray-100">
+                    <button
+                        onClick={handleDelete}
+                        disabled={isDeleting}
+                        className="w-full bg-red-50 hover:bg-red-100 text-red-600 font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                        <Trash2 className="w-4 h-4" />
+                        {isDeleting ? '削除中...' : 'このルートを削除する'}
+                    </button>
                 </div>
             )}
         </div>
     );
 }
-

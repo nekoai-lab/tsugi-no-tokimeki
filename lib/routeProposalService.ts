@@ -1,12 +1,13 @@
-import { 
-  collection, 
-  doc, 
-  addDoc, 
-  updateDoc, 
-  query, 
-  orderBy, 
-  where, 
-  getDocs, 
+import {
+  collection,
+  doc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  query,
+  orderBy,
+  where,
+  getDocs,
   onSnapshot,
   serverTimestamp,
   Timestamp
@@ -110,8 +111,8 @@ export function subscribeRouteProposals(
     'routeProposals'
   );
 
-  const q = query(routeProposalsRef, orderBy('date', 'asc'));
-  
+  const q = query(routeProposalsRef, orderBy('date', 'desc'));
+
   return onSnapshot(q, (snapshot) => {
     const proposals = snapshot.docs.map(doc => ({
       id: doc.id,
@@ -119,6 +120,26 @@ export function subscribeRouteProposals(
     } as RouteProposal));
     callback(proposals);
   });
+}
+
+/**
+ * ルート提案を削除する
+ */
+export async function deleteRouteProposal(
+  userId: string,
+  proposalId: string
+): Promise<void> {
+  const proposalRef = doc(
+    db,
+    'artifacts',
+    appId,
+    'users',
+    userId,
+    'routeProposals',
+    proposalId
+  );
+
+  await deleteDoc(proposalRef);
 }
 
 /**

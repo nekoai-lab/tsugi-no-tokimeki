@@ -17,13 +17,13 @@ export const getRelativeTime = (date: Timestamp | Date | null | undefined): stri
   return formatDate(d);
 };
 
-export const CHARACTERS = ['たまごっち', 'サンリオ', 'ディズニー', 'しずくちゃん', 'あわわちゃん', 'メゾピアノ'];;
-export const STICKER_TYPES = ['ボンボンドロップシール', 'プチドロップシール', 'ウォーターシール', 'マシュマロシール', 'Y2Kシール', 'タイルシール', 'フレークシール', '平面シール', 'ステッカー'];
-export const DEFAULT_POST_CHARACTERS = ['たまごっち', 'サンリオ', 'ディズニー', 'しずくちゃん', 'あわわちゃん', 'メゾピアノ'];
+export const CHARACTERS = ['たまごっち', 'サンリオ', 'ディズニー', 'しずくちゃん', '平成ファンシー', 'メゾピアノ'];
+export const STICKER_TYPES = ['ボンボンドロップシール', 'プチドロップシール', 'ウォーターシール', 'おはじきシール', 'タイルシール', '平面シール'];
+export const DEFAULT_POST_CHARACTERS = ['たまごっち', 'サンリオ', 'ディズニー', 'しずくちゃん', '平成ファンシー', 'メゾピアノ'];
 export const POST_SHOPS = ['東急ハンズ', 'LOFT', 'ドンキホーテ', '雑貨屋', 'イオン', 'ビレッジバンガード'];
-export const STICKER_DESIGNS = ['たまごっち', 'サンリオ', 'ディズニー', 'しずくちゃん', 'あわわちゃん', 'メゾピアノ'];
-export const AREAS = ['新宿', '渋谷', '池袋', '横浜', '大宮'];
-export const PREFERRED_SHOPS = ['東急ハンズ', 'LOFT', '雑貨屋さん', '紀伊国屋書店', 'トイザらス', 'セリア', 'ダイソー'];
+export const STICKER_DESIGNS = ['たまごっち', 'サンリオ', 'ディズニー', 'しずくちゃん', '平成ファンシー', 'メゾピアノ'];
+export const AREAS = ['新宿', '渋谷', '池袋', '原宿', '表参道', '六本木', '銀座', '秋葉原', '上野', '浅草'];
+export const PREFERRED_SHOPS = ['東急ハンズ', 'LOFT', 'ドンキホーテ', '雑貨屋', 'イオン', 'ビレッジバンガード'];
 export const TIME_SLOTS = [
   '9:00', '9:30', '10:00', '10:30', '11:00', '11:30',
   '12:00', '12:30', '13:00', '13:30', '14:00', '14:30',
@@ -33,5 +33,5 @@ export const TIME_SLOTS = [
 export const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'];
 
 export const PROFILE_AREAS = ['新宿', '渋谷', '池袋', '原宿', '表参道', '六本木', '銀座', '秋葉原', '上野', '浅草'];
-export const PROFILE_CHARACTERS = ['たまごっち', 'サンリオ', 'ディズニー', 'しずくちゃん', 'あわわちゃん', 'メゾピアノ'];
+export const PROFILE_CHARACTERS = ['たまごっち', 'サンリオ', 'ディズニー', 'しずくちゃん', '平成ファンシー', 'メゾピアノ'];
 
