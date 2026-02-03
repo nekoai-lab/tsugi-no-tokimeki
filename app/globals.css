@@ -3,6 +3,10 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --sat: env(safe-area-inset-top);
+  --sab: env(safe-area-inset-bottom);
+  --sal: env(safe-area-inset-left);
+  --sar: env(safe-area-inset-right);
 }
 
 @theme inline {
@@ -13,10 +17,35 @@
 }
 
 /* ダークモードでも常にライトモードの色を使用 */
+/* プルトゥリフレッシュ無効化 & fixed layout */
+html {
+  overflow: hidden;
+  overscroll-behavior-y: none;
+  height: 100%;
+  /* iOS Safe Area対応 */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
 body {
   background: #ffffff;
   color: #171717;
   font-family: Arial, Helvetica, sans-serif;
+  overflow: hidden;
+  overscroll-behavior-y: none;
+  height: 100%;
+  position: fixed;
+  width: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* iOS: input要素のfont-sizeが16px未満だとズームが発生するため16px以上を強制 */
+input,
+textarea,
+select {
+  font-size: 16px !important;
+  /* タッチ操作の改善 */
+  -webkit-appearance: none;
+  border-radius: 0;
 }
 
 /* Safe area support for mobile devices */
@@ -24,4 +53,21 @@ body {
   .pb-safe {
     padding-bottom: max(1rem, env(safe-area-inset-bottom));
   }
+  .pt-safe {
+    padding-top: max(0.5rem, env(safe-area-inset-top));
+  }
+  .px-safe {
+    padding-left: max(0px, env(safe-area-inset-left));
+    padding-right: max(0px, env(safe-area-inset-right));
+  }
+  .mb-safe {
+    margin-bottom: max(0px, env(safe-area-inset-bottom));
+  }
+}
+
+/* スクロール可能なコンテナ */
+.scrollable {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
 }

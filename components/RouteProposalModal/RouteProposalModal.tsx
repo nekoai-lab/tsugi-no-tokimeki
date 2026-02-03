@@ -35,6 +35,15 @@ export default function RouteProposalModal({ onClose, onConfirm, selectedDate }:
 
     const today = new Date().toISOString().split('T')[0];
 
+    // モーダル表示時にbodyのスクロールを制御
+    useEffect(() => {
+        const originalOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = originalOverflow;
+        };
+    }, []);
+
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages, step, messagesEndRef]);
@@ -534,10 +543,11 @@ export default function RouteProposalModal({ onClose, onConfirm, selectedDate }:
     };
 
     return (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center backdrop-blur-sm animate-in fade-in duration-200"
+            style={{ paddingTop: 'env(safe-area-inset-top)', paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}>
             <div className="bg-white w-full h-full max-w-md rounded-t-3xl shadow-2xl animate-in slide-in-from-bottom-10 duration-300 flex flex-col">
                 {/* Header */}
-                <div className="flex justify-between items-center p-5 border-b border-gray-100">
+                <div className="flex justify-between items-center p-5 pt-safe border-b border-gray-100">
                     <h3 className="font-bold text-lg">ルート提案 by AI</h3>
                     <button
                         onClick={onClose}
@@ -548,10 +558,10 @@ export default function RouteProposalModal({ onClose, onConfirm, selectedDate }:
                 </div>
 
                 {/* Chat Messages */}
-                <div 
-                    className="flex-1 overflow-y-auto p-4 space-y-4" 
-                    style={{ 
-                        paddingBottom: step === 'complete' ? '0px' : '200px' 
+                <div
+                    className="flex-1 overflow-y-auto p-4 space-y-4 scrollable"
+                    style={{
+                        paddingBottom: step === 'complete' ? '0px' : '200px'
                     }}
                 >
                 {messages.map((msg, idx) => (
