@@ -1,8 +1,8 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
-import { signInAnonymously, onAuthStateChanged, signOut } from 'firebase/auth';
-import { collection, query, orderBy, onSnapshot, doc, serverTimestamp, setDoc } from 'firebase/firestore';
+import React, { createContext, useContext, useState, useEffect, useMemo, useRef } from 'react';
+import { signInAnonymously, onAuthStateChanged, signOut, type Unsubscribe } from 'firebase/auth';
+import { collection, query, orderBy, onSnapshot, doc } from 'firebase/firestore';
 import { auth, db, appId } from '@/lib/firebase';
 import type { UserProfile, Post, StoreEvent, Suggestion, FirebaseUser } from '@/lib/types';
 
@@ -18,45 +18,163 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+// タイムアウト時間（開発中は20秒）
+const AUTH_TIMEOUT_MS = 20000;
+
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [events, setEvents] = useState<StoreEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // クロージャ問題を避けるためrefで状態を追跡
+  const authReadyRef = useRef(false);
+  const authUnsubRef = useRef<Unsubscribe | null>(null);
+  const profileUnsubRef = useRef<Unsubscribe | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Auth Initialization
+  // Auth Initialization - アプリで1回だけ実行
   useEffect(() => {
+    // 既にリスナーがあれば何もしない（多重登録防止）
+    if (authUnsubRef.current) {
+      console.log('🔐 [Auth] Listener already exists, skipping setup');
+      return;
+    }
+    
+    console.log('🔐 [Auth] Setup start');
+    console.log('🔐 [Auth] Debug info:', {
+      hostname: typeof window !== 'undefined' ? window.location.hostname : 'SSR',
+      authExists: !!auth,
+      authAppName: auth?.app?.name || 'unknown',
+    });
+    
+    // タイムアウト設定（保険）
+    timeoutRef.current = setTimeout(() => {
+      if (!authReadyRef.current) {
+        console.error('🔐 [Auth] Timeout after', AUTH_TIMEOUT_MS, 'ms - forcing ready state');
+        authReadyRef.current = true;
+        setLoading(false);
+      }
+    }, AUTH_TIMEOUT_MS);
+    
+    // Anonymous Auth を開始
     const initAuth = async () => {
       try {
+        console.log('🔐 [Auth] Starting anonymous auth...');
         await signInAnonymously(auth);
+        console.log('🔐 [Auth] Anonymous auth successful');
       } catch (error) {
-        console.error("Auth error:", error);
+        console.error('🔐 [Auth] Error:', error);
+        // エラー時はタイムアウトをクリアしてready状態に
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+          timeoutRef.current = null;
+        }
+        authReadyRef.current = true;
+        setLoading(false);
       }
     };
     initAuth();
-
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+    
+    // Auth State Listener
+    console.log('🔐 [Auth] Subscribe to onAuthStateChanged');
+    authUnsubRef.current = onAuthStateChanged(auth, (currentUser) => {
+      console.log('🔐 [Auth] Callback fired:', currentUser ? `uid=${currentUser.uid.slice(0,8)}...` : 'null');
+      
+      // タイムアウトをクリア（listenerが発火したので不要）
+      if (timeoutRef.current) {
+        console.log('🔐 [Auth] Clearing timeout');
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+      
+      // Auth準備完了
+      authReadyRef.current = true;
+      
       if (currentUser) {
         setUser({ uid: currentUser.uid });
-        // Fetch Profile
+        
+        // 既存のProfile listenerがあれば解除
+        if (profileUnsubRef.current) {
+          console.log('🔐 [Profile] Unsubscribe previous');
+          profileUnsubRef.current();
+          profileUnsubRef.current = null;
+        }
+        
+        // Profile listener
+        console.log('🔐 [Profile] Subscribe start');
         const profileRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'profile', 'main');
-        const unsubProfile = onSnapshot(profileRef, (docSnap) => {
-          if (docSnap.exists()) {
-            setUserProfile(docSnap.data() as UserProfile);
-          } else {
-            setUserProfile(null);
+        profileUnsubRef.current = onSnapshot(
+          profileRef,
+          (docSnap) => {
+            console.log('🔐 [Profile] Callback fired:', docSnap.exists() ? 'exists' : 'not exists');
+            if (docSnap.exists()) {
+              setUserProfile(docSnap.data() as UserProfile);
+            } else {
+              setUserProfile(null);
+            }
+            setLoading(false);
+          },
+          (error) => {
+            console.error('🔐 [Profile] Error:', error);
+            setLoading(false);
           }
-          setLoading(false);
-        });
-        return () => unsubProfile();
+        );
       } else {
         setUser(null);
+        setUserProfile(null);
         setLoading(false);
       }
     });
-    return () => unsubscribe();
-  }, []);
+    
+    // visibilitychange: ページ復帰時にリスナー状態を確認
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('🔐 [Visibility] Page became visible, authUnsubRef:', !!authUnsubRef.current);
+        // リスナーが消えていたら再セットアップ（通常は消えないはず）
+        if (!authUnsubRef.current && authReadyRef.current) {
+          console.warn('🔐 [Visibility] Listener was lost, but auth is ready - skipping re-subscribe');
+        }
+      }
+    };
+    
+    // pageshow: bfcache から復帰
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) {
+        console.log('🔐 [PageShow] Restored from bfcache, authUnsubRef:', !!authUnsubRef.current);
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('pageshow', handlePageShow);
+    
+    // Cleanup
+    return () => {
+      console.log('🔐 [Auth] Cleanup start');
+      
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('pageshow', handlePageShow);
+      
+      if (timeoutRef.current) {
+        console.log('🔐 [Auth] Clearing timeout in cleanup');
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+      
+      if (profileUnsubRef.current) {
+        console.log('🔐 [Profile] Unsubscribe in cleanup');
+        profileUnsubRef.current();
+        profileUnsubRef.current = null;
+      }
+      
+      if (authUnsubRef.current) {
+        console.log('🔐 [Auth] Unsubscribe in cleanup');
+        authUnsubRef.current();
+        authUnsubRef.current = null;
+      }
+    };
+  }, []); // 依存配列を空に - アプリで1回だけ実行
 
   // Firestore Subscriptions
   useEffect(() => {

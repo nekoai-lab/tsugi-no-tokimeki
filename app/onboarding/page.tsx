@@ -1,19 +1,27 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect, useRef } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useApp } from '@/contexts/AppContext';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db, appId } from '@/lib/firebase';
 import { CHARACTERS, AREAS, POST_SHOPS, STICKER_TYPES } from '@/lib/utils';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, MessageCircle, ExternalLink } from 'lucide-react';
 import type { UserProfile } from '@/lib/types';
-import LineLoginButton from '@/components/LineLoginButton';
+import { initializeLiff, getLineProfile, isLineLoggedIn } from '@/lib/liff';
+
+// LINE公式アカウントの友達追加URL
+const LINE_FRIEND_ADD_URL = 'https://lin.ee/TexjI38b';
 
 export default function OnboardingPage() {
     const { user, userProfile, loading } = useApp();
     const router = useRouter();
-    const [step, setStep] = useState(1);
+    const searchParams = useSearchParams();
+    
+    // URLパラメータから初期ステップを取得（LINE友達登録後の復帰用）
+    const initialStep = parseInt(searchParams.get('step') || '1');
+    const [step, setStep] = useState(initialStep);
+    
     const [profile, setProfile] = useState<UserProfile>({
         favorites: [],
         area: '',
@@ -23,6 +31,57 @@ export default function OnboardingPage() {
         availability: {}
     });
     const [lineUserId, setLineUserId] = useState<string | null>(null);
+    const [liffInitialized, setLiffInitialized] = useState(false);
+
+    // LIFF初期化とLINEログイン状態の確認（1回だけ実行）
+    const liffInitializedRef = useRef(false);
+    useEffect(() => {
+        // 既に初期化済みなら何もしない
+        if (liffInitializedRef.current) {
+            return;
+        }
+        liffInitializedRef.current = true;
+        
+        const initLiff = async () => {
+            console.log('🔵 [LIFF] Starting initialization...');
+            try {
+                // タイムアウト付きでLIFF初期化（5秒）
+                const timeoutPromise = new Promise<boolean>((_, reject) => {
+                    setTimeout(() => reject(new Error('LIFF init timeout')), 5000);
+                });
+                
+                const initialized = await Promise.race([
+                    initializeLiff(),
+                    timeoutPromise
+                ]).catch((err) => {
+                    console.warn('🔵 [LIFF] Init failed or timeout:', err);
+                    return false;
+                });
+                
+                setLiffInitialized(initialized);
+                console.log('🔵 [LIFF] Initialized:', initialized);
+                
+                if (initialized && isLineLoggedIn()) {
+                    console.log('🔵 [LIFF] User is logged in, getting profile...');
+                    const lineProfile = await getLineProfile();
+                    if (lineProfile) {
+                        console.log('🔵 [LIFF] Got profile, userId:', lineProfile.userId.slice(0, 8) + '...');
+                        setLineUserId(lineProfile.userId);
+                        // LINE連携済みの場合はStep 2から開始
+                        setStep(2);
+                    }
+                } else {
+                    console.log('🔵 [LIFF] Not logged in or init failed');
+                }
+            } catch (error) {
+                console.error('🔵 [LIFF] Error:', error);
+                setLiffInitialized(false);
+            }
+        };
+        
+        // Firebase Auth の初期化を待たずに並行してLIFF初期化
+        initLiff();
+    }, []); // 依存配列を空に - 1回だけ実行
 
     // Redirect if profile already exists
     useEffect(() => {
@@ -85,12 +144,18 @@ export default function OnboardingPage() {
         }
     };
 
-    const handleLineLoginSuccess = (lineProfile: {
-        userId: string;
-        displayName: string;
-        pictureUrl?: string;
-    }) => {
-        setLineUserId(lineProfile.userId);
+    // LINE友達追加URLを開く
+    const openLineFriendAdd = () => {
+        // LINE友達追加ページを開く
+        // 友達追加後、LIFFアプリ経由でこのページに戻ってくる
+        window.open(LINE_FRIEND_ADD_URL, '_blank');
+    };
+    
+    // LINE友達登録完了後にアプリに戻ってきた場合の処理
+    const handleLineFriendAdded = async () => {
+        // LIFF経由でlineUserIdを取得する場合はここで処理
+        // 現在はスキップしてStep 2へ進む
+        setStep(2);
     };
 
     if (loading || !user) {
@@ -115,6 +180,62 @@ export default function OnboardingPage() {
 
                 {step === 1 && (
                     <div className="w-full bg-white p-6 rounded-2xl shadow-sm animate-in fade-in duration-500">
+                        <h2 className="text-lg font-bold mb-2 text-center">
+                            <MessageCircle className="w-6 h-6 inline-block mr-2 text-[#06C755]" />
+                            LINE通知を設定しよう
+                        </h2>
+                        <p className="text-sm text-center text-gray-500 mb-6">
+                            シールが見つかったときに<br />
+                            LINEでお知らせします 🔔
+                        </p>
+
+                        {lineUserId ? (
+                            <div className="text-center mb-6">
+                                <div className="bg-green-50 p-4 rounded-xl">
+                                    <p className="text-green-600 font-medium">
+                                        ✓ LINE連携が完了しています
+                                    </p>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="space-y-4 mb-6">
+                                <button
+                                    onClick={openLineFriendAdd}
+                                    className="w-full bg-[#06C755] hover:bg-[#05b34c] text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors"
+                                >
+                                    <MessageCircle className="w-5 h-5" />
+                                    LINE友達追加する
+                                    <ExternalLink className="w-4 h-4" />
+                                </button>
+                                <p className="text-xs text-center text-gray-400">
+                                    別ウィンドウでLINEが開きます。<br />
+                                    友達追加後、こちらに戻ってきてください。
+                                </p>
+                            </div>
+                        )}
+
+                        <button
+                            onClick={handleLineFriendAdded}
+                            className={`w-full py-3 rounded-xl font-bold transition-colors ${
+                                lineUserId 
+                                    ? 'bg-gray-800 text-white' 
+                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            }`}
+                        >
+                            {lineUserId ? '次へ' : '友達追加したので次へ'}
+                        </button>
+
+                        <button
+                            onClick={() => setStep(2)}
+                            className="w-full py-2 mt-2 text-gray-400 text-sm"
+                        >
+                            あとで設定する（スキップ）
+                        </button>
+                    </div>
+                )}
+
+                {step === 2 && (
+                    <div className="w-full bg-white p-6 rounded-2xl shadow-sm animate-in fade-in duration-500">
                         <h2 className="text-lg font-bold mb-4 text-center">お気に入りのキャラを選んでね</h2>
                         <p className="text-xs text-center text-gray-400 mb-4">複数選択できます</p>
                         <div className="flex flex-wrap gap-2 justify-center mb-6">
@@ -131,17 +252,20 @@ export default function OnboardingPage() {
                                 </button>
                             ))}
                         </div>
-                        <button
-                            onClick={() => setStep(2)}
-                            disabled={profile.favorites.length === 0}
-                            className="w-full bg-gray-800 text-white py-3 rounded-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            次へ
-                        </button>
+                        <div className="flex gap-3">
+                            <button onClick={() => setStep(1)} className="flex-1 py-3 text-gray-500 font-medium">戻る</button>
+                            <button
+                                onClick={() => setStep(3)}
+                                disabled={profile.favorites.length === 0}
+                                className="flex-1 bg-gray-800 text-white py-3 rounded-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                次へ
+                            </button>
+                        </div>
                     </div>
                 )}
 
-                {step === 2 && (
+                {step === 3 && (
                     <div className="w-full bg-white p-6 rounded-2xl shadow-sm animate-in fade-in duration-500">
                         <h2 className="text-lg font-bold mb-4 text-center">よく行くエリアは？</h2>
                         <p className="text-xs text-center text-gray-400 mb-4">複数選択できます</p>
@@ -160,9 +284,9 @@ export default function OnboardingPage() {
                             ))}
                         </div>
                         <div className="flex gap-3">
-                            <button onClick={() => setStep(1)} className="flex-1 py-3 text-gray-500 font-medium">戻る</button>
+                            <button onClick={() => setStep(2)} className="flex-1 py-3 text-gray-500 font-medium">戻る</button>
                             <button
-                                onClick={() => setStep(3)}
+                                onClick={() => setStep(4)}
                                 disabled={(profile.areas || []).length === 0}
                                 className="flex-1 bg-gray-800 text-white py-3 rounded-xl font-bold disabled:opacity-50"
                             >
@@ -172,7 +296,7 @@ export default function OnboardingPage() {
                     </div>
                 )}
 
-                {step === 3 && (
+                {step === 4 && (
                     <div className="w-full bg-white p-6 rounded-2xl shadow-sm animate-in fade-in duration-500">
                         <h2 className="text-lg font-bold mb-4 text-center">よく行く店は？</h2>
                         <p className="text-xs text-center text-gray-400 mb-4">複数選択できます</p>
@@ -191,9 +315,9 @@ export default function OnboardingPage() {
                             ))}
                         </div>
                         <div className="flex gap-3">
-                            <button onClick={() => setStep(2)} className="flex-1 py-3 text-gray-500 font-medium">戻る</button>
+                            <button onClick={() => setStep(3)} className="flex-1 py-3 text-gray-500 font-medium">戻る</button>
                             <button
-                                onClick={() => setStep(4)}
+                                onClick={() => setStep(5)}
                                 className="flex-1 bg-gray-800 text-white py-3 rounded-xl font-bold"
                             >
                                 次へ
@@ -202,7 +326,7 @@ export default function OnboardingPage() {
                     </div>
                 )}
 
-                {step === 4 && (
+                {step === 5 && (
                     <div className="w-full bg-white p-6 rounded-2xl shadow-sm animate-in fade-in duration-500">
                         <h2 className="text-lg font-bold mb-4 text-center">欲しいシールの種類は？</h2>
                         <p className="text-xs text-center text-gray-400 mb-4">複数選択できます</p>
@@ -221,9 +345,9 @@ export default function OnboardingPage() {
                             ))}
                         </div>
                         <div className="flex gap-3">
-                            <button onClick={() => setStep(3)} className="flex-1 py-3 text-gray-500 font-medium">戻る</button>
+                            <button onClick={() => setStep(4)} className="flex-1 py-3 text-gray-500 font-medium">戻る</button>
                             <button
-                                onClick={() => setStep(5)}
+                                onClick={() => setStep(6)}
                                 className="flex-1 bg-gray-800 text-white py-3 rounded-xl font-bold"
                             >
                                 次へ
@@ -232,40 +356,34 @@ export default function OnboardingPage() {
                     </div>
                 )}
 
-                {step === 5 && (
+                {step === 6 && (
                     <div className="w-full bg-white p-6 rounded-2xl shadow-sm animate-in fade-in duration-500">
-                        <h2 className="text-lg font-bold mb-2 text-center">LINE通知を受け取る</h2>
-                        <p className="text-xs text-center text-gray-400 mb-6">
-                            LINEを連携すると、シールが見つかったときに<br />プッシュ通知でお知らせします 🔔
+                        <h2 className="text-lg font-bold mb-2 text-center">準備完了！</h2>
+                        <p className="text-sm text-center text-gray-500 mb-6">
+                            設定が完了しました！<br />
+                            さっそくシールを探しに行きましょう 🎉
                         </p>
 
-                        <div className="mb-6">
-                            <LineLoginButton
-                                onLoginSuccess={handleLineLoginSuccess}
-                                className="w-full"
-                            />
-                            {lineUserId && (
-                                <p className="text-center text-green-600 text-sm mt-3">
-                                    ✓ LINE連携が完了しました！
-                                </p>
-                            )}
+                        <div className="bg-gray-50 p-4 rounded-xl mb-6 text-sm">
+                            <p className="font-medium text-gray-700 mb-2">あなたの設定:</p>
+                            <ul className="space-y-1 text-gray-600">
+                                <li>💖 キャラ: {profile.favorites.join(', ') || '未設定'}</li>
+                                <li>📍 エリア: {(profile.areas || []).join(', ') || '未設定'}</li>
+                                <li>🏪 店舗: {(profile.preferredShops || []).join(', ') || '未設定'}</li>
+                                <li>🎀 シール: {(profile.preferredStickerTypes || []).slice(0, 3).join(', ')}{(profile.preferredStickerTypes || []).length > 3 ? '...' : ''}</li>
+                                <li>🔔 LINE通知: {lineUserId ? '連携済み ✓' : '未連携'}</li>
+                            </ul>
                         </div>
 
                         <div className="flex gap-3">
-                            <button onClick={() => setStep(4)} className="flex-1 py-3 text-gray-500 font-medium">戻る</button>
+                            <button onClick={() => setStep(5)} className="flex-1 py-3 text-gray-500 font-medium">戻る</button>
                             <button
                                 onClick={() => saveProfile()}
                                 className="flex-1 bg-pink-500 text-white py-3 rounded-xl font-bold shadow-lg shadow-pink-200"
                             >
-                                {lineUserId ? 'はじめる' : 'スキップして始める'}
+                                はじめる ✨
                             </button>
                         </div>
-
-                        {!lineUserId && (
-                            <p className="text-center text-gray-400 text-xs mt-4">
-                                あとからプロフィールで連携できます
-                            </p>
-                        )}
                     </div>
                 )}
             </div>
