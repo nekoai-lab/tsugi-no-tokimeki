@@ -188,6 +188,79 @@ export function createGoNotificationMessage(
 }
 
 /**
+ * 投稿通知メッセージを作成
+ */
+export function createPostNotificationMessage(
+  character: string,
+  area: string,
+  shopName: string,
+  stickerType: string,
+  status: string
+): FlexMessage {
+  const statusText = status === 'seen' ? 'あった' : '売り切れ';
+  const statusEmoji = status === 'seen' ? '✨' : '😢';
+  const headerColor = status === 'seen' ? '#EC4899' : '#9CA3AF';
+
+  return {
+    type: "flex",
+    altText: `${statusEmoji} ${area}で${character}の目撃情報！`,
+    contents: {
+      type: "bubble",
+      body: {
+        type: "box",
+        layout: "vertical",
+        contents: [
+          {
+            type: "text",
+            text: `${statusEmoji} 新しい目撃情報`,
+            size: "xl",
+            weight: "bold",
+            color: headerColor,
+          },
+          {
+            type: "text",
+            text: `${character}が${area}で「${statusText}」`,
+            size: "md",
+            margin: "md",
+            wrap: true,
+          },
+          {
+            type: "separator",
+            margin: "lg",
+          },
+          {
+            type: "box",
+            layout: "vertical",
+            margin: "lg",
+            contents: [
+              { type: "text" as const, text: `📍 場所: ${area}`, size: "sm", color: "#666666", margin: "sm", wrap: true },
+              { type: "text" as const, text: `🏪 店名: ${shopName}`, size: "sm", color: "#666666", margin: "sm", wrap: true },
+              { type: "text" as const, text: `🏷️ 種類: ${stickerType}`, size: "sm", color: "#666666", margin: "sm", wrap: true },
+            ],
+          },
+        ],
+      },
+      footer: {
+        type: "box",
+        layout: "vertical",
+        contents: [
+          {
+            type: "button",
+            action: {
+              type: "uri",
+              label: "アプリで詳細を見る",
+              uri: process.env.NEXT_PUBLIC_APP_URL || "https://tsugi-no-tokimeki-265901745615.asia-northeast1.run.app",
+            },
+            style: "primary",
+            color: "#EC4899",
+          },
+        ],
+      },
+    },
+  };
+}
+
+/**
  * シンプルなテキストメッセージを作成
  */
 export function createTextMessage(text: string): LineMessage {

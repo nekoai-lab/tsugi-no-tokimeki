@@ -1,5 +1,13 @@
 import { Timestamp } from 'firebase/firestore';
 
+export type TimeSlotKey = 'morning' | 'afternoon' | 'evening' | 'night';
+
+export interface NotificationPreferences {
+    enabled: boolean;
+    areas: string[];
+    timeSlots: TimeSlotKey[];
+}
+
 export interface UserProfile {
     favorites: string[];
     area: string;
@@ -12,6 +20,7 @@ export interface UserProfile {
     customStickerTypes?: string[];
     availability: Record<string, string[]>;
     lineUserId?: string;
+    notificationPreferences?: NotificationPreferences;
     updatedAt?: Timestamp;
 }
 
