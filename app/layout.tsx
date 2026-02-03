@@ -16,6 +16,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Tsugi no Tokimeki",
   description: "次のトキメキを逃さないための行動判断エージェント",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Tokimeki",
+  },
 };
 
 export const viewport: Viewport = {
@@ -24,6 +29,7 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
+  themeColor: "#ffffff",
 };
 
 export default function RootLayout({
