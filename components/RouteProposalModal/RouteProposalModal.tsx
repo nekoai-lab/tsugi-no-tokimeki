@@ -251,16 +251,16 @@ export default function RouteProposalModal({ onClose, onConfirm, selectedDate }:
             setProposedShops(data.shops);
             setProposedTotalTime(data.totalTravelTime);
 
-            const finalDate = formValues.selectedDate || formValues.customDate || selectedDate || '';
-            const routeMessage = formatRouteProposal(
+            // Vertex AIからのフレンドリーなメッセージをそのまま表示
+            const aiMessage = data.message || formatRouteProposal(
                 data.shops,
                 data.totalTravelTime,
                 finalAreas.join('、'),
                 formValues.startTime || formValues.customTime.split('〜')[0] || '',
                 formValues.endTime || formValues.customTime.split('〜')[1] || '',
-                finalDate
+                formValues.selectedDate || formValues.customDate || selectedDate || ''
             );
-            addAIMessage(routeMessage);
+            addAIMessage(aiMessage);
         } catch (error) {
             console.error('Route proposal error:', error);
             addAIMessage('申し訳ございません、少し時間をおいて再度お試しください。');
@@ -374,7 +374,7 @@ export default function RouteProposalModal({ onClose, onConfirm, selectedDate }:
             case 'stickerType':
                 return (
                     <div className="grid grid-cols-2 gap-2">
-                        {['ボンボンドロップシール', 'プチドロップシール', 'ウォーターシール', 'マシュマロシール', 'Y2Kシール', 'タイルシール', 'フレークシール', '平面シール', 'ステッカー'].map((type) => (
+                        {['ボンボンドロップシール', 'プチドロップシール', 'ウォーターシール', 'おはじきシール', 'タイルシール', '平面シール'].map((type) => (
                             <StepButton
                                 key={type}
                                 label={type}
@@ -433,7 +433,7 @@ export default function RouteProposalModal({ onClose, onConfirm, selectedDate }:
             case 'shops':
                 return (
                     <div className="grid grid-cols-2 gap-2">
-                        {['東急ハンズ', 'LOFT', '紀伊国屋書店', 'ヴィレッジヴァンガード'].map((shop) => (
+                        {['東急ハンズ', 'LOFT', 'ドンキホーテ', '雑貨屋', 'イオン', 'ビレッジバンガード'].map((shop) => (
                             <StepButton
                                 key={shop}
                                 label={shop}
@@ -548,26 +548,30 @@ export default function RouteProposalModal({ onClose, onConfirm, selectedDate }:
                 </div>
 
                 {/* Chat Messages */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-4" style={{ paddingBottom: '200px' }}>
-                    {messages.map((msg, idx) => (
-                        <div key={idx}>
-                            <ChatMessage message={msg} />
-
-                            {/* 最新のAIメッセージの直後に選択ボタンを表示 */}
-                            {msg.role === 'ai' &&
-                                idx === messages.length - 1 &&
-                                step !== 'complete' &&
-                                !isLoading && (
-                                    <div className="mt-3">
-                                        {renderSelectionButtons()}
-                                    </div>
-                                )}
+                <div 
+                    className="flex-1 overflow-y-auto p-4 space-y-4" 
+                    style={{ 
+                        paddingBottom: step === 'complete' ? '0px' : '200px' 
+                    }}
+                >
+                {messages.map((msg, idx) => (
+                    <div key={idx}>
+                    <ChatMessage message={msg} />
+                    {/* 最新のAIメッセージの直後に選択ボタンを表示 */}
+                    {msg.role === 'ai' &&
+                        idx === messages.length - 1 &&
+                        step !== 'complete' &&
+                        !isLoading && (
+                        <div className="mt-3">
+                            {renderSelectionButtons()}
                         </div>
-                    ))}
+                        )}
+                    </div>
+                ))}
 
-                    {isLoading && <LoadingIndicator />}
+                {isLoading && <LoadingIndicator />}
 
-                    <div ref={messagesEndRef} />
+                <div ref={messagesEndRef} />
                 </div>
 
                 {/* Input Area - Fixed at bottom */}
