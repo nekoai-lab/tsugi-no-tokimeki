@@ -123,13 +123,10 @@ export default function ProfileScreen() {
     })();
 
     return (
-        <div className="p-4">
+        <div className="p-6">
             <div className="flex items-center gap-4 mb-8">
-                <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center text-2xl">
-                    🦄
-                </div>
                 <div>
-                    <h2 className="font-bold text-lg">My Profile</h2>
+                    <h1 className="font-bold text-lg">My Profile</h1>
                     <p className="text-xs text-gray-500">ID: {user?.uid?.slice(0, 6)}...</p>
                 </div>
             </div>
