@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useApp } from '@/contexts/AppContext';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
@@ -13,7 +13,29 @@ import { initializeLiff, getLineProfile, isLineLoggedIn } from '@/lib/liff';
 // LINE公式アカウントの友達追加URL
 const LINE_FRIEND_ADD_URL = 'https://lin.ee/TexjI38b';
 
+// ローディングコンポーネント
+function OnboardingLoading() {
+    return (
+        <div className="flex h-screen w-full items-center justify-center bg-pink-50">
+            <div className="flex flex-col items-center">
+                <Sparkles className="w-10 h-10 text-pink-500 animate-bounce" />
+                <p className="mt-4 text-pink-400 font-bold text-sm tracking-widest">LOADING...</p>
+            </div>
+        </div>
+    );
+}
+
+// メインページをSuspenseでラップしてエクスポート
 export default function OnboardingPage() {
+    return (
+        <Suspense fallback={<OnboardingLoading />}>
+            <OnboardingContent />
+        </Suspense>
+    );
+}
+
+// 実際のオンボーディングコンテンツ
+function OnboardingContent() {
     const { user, userProfile, loading } = useApp();
     const router = useRouter();
     const searchParams = useSearchParams();
