@@ -10,8 +10,8 @@ import { Sparkles, MessageCircle, ExternalLink } from 'lucide-react';
 import type { UserProfile } from '@/lib/types';
 import { initializeLiff, getLineProfile, isLineLoggedIn } from '@/lib/liff';
 
-// LINE公式アカウントの友達追加URL
-const LINE_FRIEND_ADD_URL = 'https://lin.ee/TexjI38b';
+// LINE公式アカウントの友達追加URL（LIFF URL に統一、友だち追加オプションON）
+const LINE_FRIEND_ADD_URL = 'https://liff.line.me/2008962156-2k9hitOb';
 
 // ローディングコンポーネント
 function OnboardingLoading() {
@@ -66,6 +66,28 @@ function OnboardingContent() {
         
         const initLiff = async () => {
             console.log('🔵 [LIFF] Starting initialization...');
+            
+            // step=2 の場合は LIFF 経由で戻ってきた可能性が高い
+            // リダイレクトループを防ぐため、lineUserId取得のみ行う
+            const urlStep = searchParams.get('step');
+            if (urlStep === '2') {
+                console.log('🔵 [LIFF] step=2 detected, simplified init to prevent loop');
+                try {
+                    const initialized = await initializeLiff();
+                    setLiffInitialized(initialized);
+                    if (initialized && isLineLoggedIn()) {
+                        const lineProfile = await getLineProfile();
+                        if (lineProfile) {
+                            console.log('🔵 [LIFF] Got profile from step=2, userId:', lineProfile.userId.slice(0, 8) + '...');
+                            setLineUserId(lineProfile.userId);
+                        }
+                    }
+                } catch (error) {
+                    console.warn('🔵 [LIFF] Init failed in step=2 mode:', error);
+                }
+                return; // step変更なし、ループ防止
+            }
+            
             try {
                 // タイムアウト付きでLIFF初期化（5秒）
                 const timeoutPromise = new Promise<boolean>((_, reject) => {
