@@ -10,8 +10,8 @@ import { Sparkles, MessageCircle, ExternalLink } from 'lucide-react';
 import type { UserProfile } from '@/lib/types';
 import { initializeLiff, getLineProfile, isLineLoggedIn } from '@/lib/liff';
 
-// LINE公式アカウントの友達追加URL（LIFF URL に統一、友だち追加オプションON）
-const LINE_FRIEND_ADD_URL = 'https://liff.line.me/2008962156-2k9hitOb';
+// LINE公式アカウントの友達追加URL（lin.ee は友達追加画面、LIFF URLは挨拶メッセージで使用）
+const LINE_FRIEND_ADD_URL = 'https://lin.ee/TexjI38b';
 
 // ローディングコンポーネント
 function OnboardingLoading() {
