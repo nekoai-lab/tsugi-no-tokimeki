@@ -20,7 +20,7 @@ export default function RootPage() {
   }, [loading, user, userProfile, router]);
 
   return (
-    <div className="flex h-screen w-full items-center justify-center bg-pink-50">
+    <div className="flex min-h-[100dvh] w-full items-center justify-center bg-pink-50">
       <div className="flex flex-col items-center">
         <Sparkles className="w-10 h-10 text-pink-500 animate-bounce" />
         <p className="mt-4 text-pink-400 font-bold text-sm tracking-widest">LOADING...</p>

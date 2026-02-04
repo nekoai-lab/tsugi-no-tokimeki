@@ -16,7 +16,7 @@ const LINE_FRIEND_ADD_URL = 'https://lin.ee/TexjI38b';
 // ローディングコンポーネント
 function OnboardingLoading() {
     return (
-        <div className="flex h-screen w-full items-center justify-center bg-pink-50">
+        <div className="flex min-h-[100dvh] w-full items-center justify-center bg-pink-50">
             <div className="flex flex-col items-center">
                 <Sparkles className="w-10 h-10 text-pink-500 animate-bounce" />
                 <p className="mt-4 text-pink-400 font-bold text-sm tracking-widest">LOADING...</p>
@@ -204,7 +204,7 @@ function OnboardingContent() {
 
     if (loading || !user) {
         return (
-            <div className="flex h-screen w-full items-center justify-center bg-pink-50">
+            <div className="flex min-h-[100dvh] w-full items-center justify-center bg-pink-50">
                 <div className="flex flex-col items-center">
                     <Sparkles className="w-10 h-10 text-pink-500 animate-bounce" />
                     <p className="mt-4 text-pink-400 font-bold text-sm tracking-widest">LOADING...</p>
@@ -214,7 +214,7 @@ function OnboardingContent() {
     }
 
     return (
-        <div className="flex flex-col h-screen bg-pink-50 p-6 overflow-y-auto">
+        <div className="flex flex-col min-h-[100dvh] bg-pink-50 p-6 overflow-y-auto">
             <div className="flex-1 flex flex-col justify-center items-center max-w-md mx-auto w-full">
                 <div className="mb-8 text-center">
                     <Sparkles className="w-12 h-12 text-pink-500 mx-auto mb-4" />
