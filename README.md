@@ -17,7 +17,7 @@
 - 🤖 **Vertex AI (Gemini 2.5)** による行動判断 ✅
 - ⏰ **Cloud Scheduler** で朝8時・夕18時に自動分析 ✅
 - 📅 ユーザーの空き時間 × イベント情報のマッチング
-- 🔔 LINE通知でプッシュ通知（次フェーズ）
+- 🔔 LINE通知でプッシュ通知 実装中
 
 ---
 
@@ -25,14 +25,16 @@
 
 | 機能 | 説明 | 状態 |
 |------|------|------|
-| **オンボーディング** | お気に入りのキャラ・エリア・空き時間の設定 | ✅ 実装済み |
+| **オンボーディング** | お気に入りのキャラ・エリア・ショップ・シール種類の設定（5ステップ） | ✅ 実装済み |
 | **投稿機能** | 目撃情報（見た/買えた/売り切れ）の投稿 | ✅ 実装済み |
-| **フィード表示** | コミュニティ投稿のリアルタイム表示 | ✅ 実装済み |
-| **行動判断 AI** | 今動くべきかの判断と根拠表示 | ✅ 実装済み |
-| **Vertex AI 統合** | Gemini 2.5 による本格的なAI推論 | ✅ 実装済み |
+| **フィード表示** | コミュニティ投稿のリアルタイム表示・フィルター機能 | ✅ 実装済み |
+| **行動判断 AI** | 今動くべきかの判断と根拠表示（For You画面） | ✅ 実装済み |
+| **Vertex AI 統合** | Gemini 2.5 Flash による本格的なAI推論 | ✅ 実装済み |
 | **Cloud Scheduler** | 朝8時+夕18時の定期分析 | ✅ 実装済み |
-| **カレンダー連携** | 行ける候補日の表示 | ⚠️ モック実装 |
-| **LINE通知** | LINE Messaging API でプッシュ通知 | 🔄 次フェーズ |
+| **ルート提案 AI** | AIがショップ巡回スケジュールを作成 | ✅ 実装済み |
+| **カレンダー** | ルート提案の一覧表示・詳細確認・削除 | ✅ 実装済み |
+| **プロフィール編集** | ユーザー設定の編集機能 | ✅ 実装済み |
+| **LINE連携** | LIFF ログイン + Messaging API でプッシュ通知 | ✅ 実装済み |
 
 ---
 
@@ -65,7 +67,7 @@ graph TD
         end
     end
     
-    subgraph "External Services (v3予定)"
+    subgraph "External Services ✅"
         LINE[LINE Messaging API<br/>📱 プッシュ通知]
     end
     
@@ -107,13 +109,13 @@ sequenceDiagram
     UI->>Run: POST /api (via Firestore SDK)
     Run->>FS: addDoc(posts)
     FS-->>UI: onSnapshot (リアルタイム更新)
-    
-    Note over AI: 定期的に分析 (v3)
+
+    Note over AI: 定期的に分析
     AI->>FS: 直近の投稿を取得
     AI->>AI: 期待値・根拠を計算
     AI->>FS: suggestions に保存
     
-    alt 確度が高い場合 (v3)
+    alt 確度が高い場合
         Run->>LINE: pushMessage()
         LINE-->>User: 📱「いま動こう！」通知
     end
@@ -139,8 +141,8 @@ sequenceDiagram
     
     alt 未設定の場合
         App-->>User: オンボーディング画面
-        User->>App: Step1-3: お気に入りのキャラ・エリア・時間を設定
-        User->>App: Step4: LINE連携（任意）
+        User->>App: Step1-4: キャラ・エリア・ショップ・シール種類を設定
+        User->>App: Step5: LINE連携（任意）
         App->>FS: ユーザー設定 + lineUserId を保存
     else 設定済みの場合
         App-->>User: メイン画面
@@ -172,23 +174,53 @@ tsugi-no-tokimeki/
 │   └── api/
 │       ├── analyze/          # 個別ユーザー分析 API
 │       │   └── route.ts
-│       └── analyze-all/      # Cloud Scheduler用 全ユーザー分析 API
+│       ├── analyze-all/      # Cloud Scheduler用 全ユーザー分析 API
+│       │   └── route.ts
+│       └── route-proposal/   # ルート提案 AI API
 │           └── route.ts
 ├── components/               # 再利用可能なコンポーネント
 │   ├── NavButton.tsx         # ナビゲーションボタン (Link使用)
 │   ├── PostModal.tsx         # 投稿モーダル
-│   └── LineLoginButton.tsx   # LINE ログインボタン
+│   ├── ProfileEditModal.tsx  # プロフィール編集モーダル
+│   ├── LineLoginButton.tsx   # LINE ログインボタン
+│   ├── RouteDetailView.tsx   # ルート提案詳細表示
+│   ├── RouteProposalModal/   # ルート提案モーダル
+│   │   ├── RouteProposalModal.tsx
+│   │   └── components/       # ステップUI
+│   │       ├── AreasStep.tsx
+│   │       ├── DateStep.tsx
+│   │       ├── TimeStep.tsx
+│   │       ├── ShopsStep.tsx
+│   │       ├── StickerTypeStep.tsx
+│   │       ├── StickerDesignStep.tsx
+│   │       ├── CompleteStep.tsx
+│   │       ├── ChatMessage.tsx
+│   │       └── LoadingIndicator.tsx
+│   └── shared/               # 共通UIコンポーネント
+│       ├── ButtonSelect.tsx
+│       ├── CustomDatePicker.tsx
+│       ├── CustomTimePicker.tsx
+│       ├── SelectWithCustom.tsx
+│       └── StepButton.tsx
 ├── contexts/                 # React Context
 │   └── AppContext.tsx        # グローバル状態管理
+├── hooks/                    # カスタムフック
+│   ├── useRouteProposalForm.ts   # ルート提案フォーム状態
+│   ├── useRouteProposalChat.ts   # AIチャット履歴管理
+│   └── useRouteProposalSteps.ts  # ステップUI制御
 ├── lib/                      # ユーティリティ・設定
 │   ├── firebase.ts           # Firebase初期化
 │   ├── liff.ts               # LINE LIFF SDK 初期化・操作
+│   ├── line.ts               # LINE Messaging API メッセージ構築
 │   ├── types.ts              # TypeScript型定義
+│   ├── routeProposalTypes.ts # ルート提案の型定義
+│   ├── routeProposalService.ts # Firestore CRUD (ルート提案)
+│   ├── routeProposalUtils.ts # ルート提案のフォーマット・パース
 │   └── utils.ts              # ヘルパー関数・定数
 ├── screens/                  # 画面コンポーネント
 │   ├── ForYouScreen.tsx      # For You画面のコンテンツ
 │   ├── FeedScreen.tsx        # Feed画面のコンテンツ
-│   ├── CalendarScreen.tsx   # Calendar画面のコンテンツ
+│   ├── CalendarScreen.tsx    # Calendar画面のコンテンツ
 │   └── ProfileScreen.tsx     # Profile画面のコンテンツ
 ├── docs/
 │   └── DEVELOPMENT_ROADMAP.md  # 開発ロードマップ
@@ -198,7 +230,6 @@ tsugi-no-tokimeki/
 ├── cloudbuild.yaml           # Cloud Build パイプライン設定
 ├── firebase.json             # Firebase Emulator 設定
 ├── next.config.ts            # Next.js 設定 (standalone出力)
-├── tailwind.config.ts        # Tailwind CSS 設定
 ├── tsconfig.json             # TypeScript 設定
 ├── package.json              # 依存関係
 ├── .env.example              # 環境変数テンプレート
@@ -222,8 +253,9 @@ tsugi-no-tokimeki/
 | **CI/CD** | Cloud Build | - | GitHub連携自動デプロイ |
 | **Container** | Docker | - | マルチステージビルド |
 | **Notification** | LINE Messaging API | - | プッシュ通知 ✅ |
-| **AI** | Vertex AI (Gemini) | 2.5 | 行動判断AI ✅ |
+| **AI** | Vertex AI (Gemini) | 2.5 Flash | 行動判断AI・ルート提案 ✅ |
 | **Form** | react-hook-form + zod | - | フォームバリデーション |
+| **Markdown** | react-markdown + remark-gfm | - | AIレスポンス表示 |
 
 ---
 
@@ -252,7 +284,7 @@ tsugi-no-tokimeki/
 ### Phase 3: LINE連携 ✅ 完了
 
 - [x] LINE LIFF SDK 導入
-- [x] LINE ログイン機能（オンボーディング Step 4）
+- [x] LINE ログイン機能（オンボーディング Step 5）
 - [x] lineUserId を Firestore に保存
 - [x] Secret Manager に LINE シークレット登録
 - [x] プッシュ通知 API 実装（`/api/analyze-all` に統合）
@@ -262,10 +294,12 @@ tsugi-no-tokimeki/
 
 ### Phase 4: 今後の予定
 
-- [ ] Event Matcher (イベント情報との連携)
+- [ ] Event Matcher（イベント情報との連携）
 - [ ] PWA 対応
 - [ ] LINE Webhook 受信
-- [ ] 転売対策 (posts_private コレクション)
+- [ ] 転売対策（posts_private コレクション）
+- [ ] 地図表示・ジオロケーション連携
+- [ ] ショップ営業時間データベース
 
 ---
 
@@ -499,18 +533,18 @@ sequenceDiagram
 |------|------|------|
 | **LINEログイン** | LIFF SDK でユーザー認証 | ✅ |
 | **プッシュ通知** | 「go」判定時に自動通知 | ✅ |
-| **リッチメッセージ** | 目撃場所・残り個数をカード形式で通知 | 🔄 |
-| **クイックリプライ** | 「行く」「スキップ」をワンタップで回答 | 🔄 |
+| **リッチメッセージ** | 目撃場所・残り個数をカード形式で通知 | 🔄 予定 |
+| **クイックリプライ** | 「行く」「スキップ」をワンタップで回答 | 🔄 予定 |
 
 ### ユーザー体験フロー
 
 ```
 1. アプリにアクセス
        ↓
-2. オンボーディング Step 1-3
-   （推しキャラ、エリア、時間設定）
+2. オンボーディング Step 1-4
+   （推しキャラ、エリア、ショップ、シール種類）
        ↓
-3. Step 4「LINEでログイン」
+3. Step 5「LINEでログイン」（任意）
    → LINE 認証 → lineUserId 取得
        ↓
 4. 公式 LINE 友達追加
