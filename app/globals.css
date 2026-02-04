@@ -22,8 +22,7 @@ html {
   overflow: hidden;
   overscroll-behavior-y: none;
   height: 100%;
-  /* iOS Safe Area対応 */
-  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  /* iOS Safe Area対応はコンポーネントレベルで実施 */
 }
 
 body {
