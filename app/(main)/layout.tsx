@@ -67,7 +67,7 @@ export default function MainLayout({
             <button
                 onClick={() => setShowPostModal(true)}
                 className="absolute right-4 w-14 h-14 bg-gray-900 text-white rounded-full shadow-lg flex items-center justify-center hover:scale-105 transition-transform z-20"
-                style={{ bottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' }}
+                style={{ bottom: 'calc(6rem + env(safe-area-inset-bottom, 16px))' }}
             >
                 <Plus className="w-7 h-7" />
             </button>
