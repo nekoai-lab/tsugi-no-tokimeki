@@ -101,6 +101,22 @@ export default function PostModal({ onClose }: PostModalProps) {
         postDate: postDate,
         createdAt: serverTimestamp()
       });
+
+      // Fire-and-forget: 通知APIを非同期で呼ぶ（UIはブロックしない）
+      fetch('/api/notify-post', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          character,
+          stickerType,
+          areaMasked: station || '不明',
+          shopName,
+          status,
+          postDate,
+          posterUid: user.uid,
+        }),
+      }).catch(err => console.error('Notification error:', err));
+
       onClose();
     } catch (e) {
       console.error("Post error:", e);

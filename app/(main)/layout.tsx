@@ -7,6 +7,7 @@ import { Bell, Plus } from 'lucide-react';
 import NavButton from '@/components/NavButton';;
 import { Sparkles, Home, Calendar as CalendarIcon, User } from 'lucide-react';
 import PostModal from '@/components/PostModal';
+import NotificationSettingsModal from '@/components/NotificationSettingsModal';
 
 export default function MainLayout({
     children,
@@ -14,6 +15,7 @@ export default function MainLayout({
     children: React.ReactNode;
 }) {
     const [showPostModal, setShowPostModal] = useState(false);
+    const [showNotificationSettings, setShowNotificationSettings] = useState(false);
     const { user, userProfile, loading } = useApp();
     const router = useRouter();
 
@@ -27,7 +29,7 @@ export default function MainLayout({
     // ローディング中または未認証の場合はローディング画面を表示
     if (loading || !user || !userProfile) {
         return (
-            <div className="flex h-screen w-full items-center justify-center bg-pink-50">
+            <div className="flex h-screen w-full items-center justify-center bg-white">
                 <div className="flex flex-col items-center">
                     <div className="w-10 h-10 text-pink-500 animate-bounce">✨</div>
                     <p className="mt-4 text-pink-400 font-bold text-sm tracking-widest">LOADING...</p>
@@ -44,11 +46,15 @@ export default function MainLayout({
                     Tsugi no Tokimeki
                 </h1>
                 <div className="flex items-center gap-3">
-                    {/* Mock Notification Badge */}
-                    <div className="relative">
+                    <button
+                        onClick={() => setShowNotificationSettings(true)}
+                        className="relative p-1 hover:bg-gray-100 rounded-full transition-colors"
+                    >
                         <Bell className="w-6 h-6 text-gray-600" />
-                        <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white"></span>
-                    </div>
+                        {userProfile?.notificationPreferences?.enabled && userProfile?.lineUserId && (
+                            <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />
+                        )}
+                    </button>
                 </div>
             </header>
 
@@ -80,6 +86,11 @@ export default function MainLayout({
             {/* Post Modal Overlay */}
             {showPostModal && (
                 <PostModal onClose={() => setShowPostModal(false)} />
+            )}
+
+            {/* Notification Settings Modal */}
+            {showNotificationSettings && (
+                <NotificationSettingsModal onClose={() => setShowNotificationSettings(false)} />
             )}
         </div>
     );

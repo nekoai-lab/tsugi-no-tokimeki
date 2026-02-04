@@ -35,3 +35,10 @@ export const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'];
 export const PROFILE_AREAS = ['新宿', '渋谷', '池袋', '原宿', '表参道', '六本木', '銀座', '秋葉原', '上野', '浅草'];
 export const PROFILE_CHARACTERS = ['たまごっち', 'サンリオ', 'ディズニー', 'しずくちゃん', '平成ファンシー', 'メゾピアノ'];
 
+export const NOTIFICATION_TIME_SLOTS = [
+  { key: 'morning' as const,   label: '朝',   range: '6:00〜11:00' },
+  { key: 'afternoon' as const, label: '昼',   range: '11:00〜15:00' },
+  { key: 'evening' as const,   label: '夕方', range: '15:00〜19:00' },
+  { key: 'night' as const,     label: '夜',   range: '19:00〜24:00' },
+];
+
