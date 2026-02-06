@@ -35,6 +35,13 @@ export default function OnboardingPage() {
 }
 
 // 実際のオンボーディングコンテンツ
+// ステップ構成:
+// Step 1: キャラ選択
+// Step 2: エリア選択
+// Step 3: 店舗選択
+// Step 4: シール種類選択
+// Step 5: LINE通知設定（友達追加）
+// Step 6: 確認＆保存
 function OnboardingContent() {
     const { user, userProfile, loading } = useApp();
     const router = useRouter();
@@ -67,23 +74,23 @@ function OnboardingContent() {
         const initLiff = async () => {
             console.log('🔵 [LIFF] Starting initialization...');
             
-            // step=2 の場合は LIFF 経由で戻ってきた可能性が高い
+            // step=6 の場合は LIFF 経由で戻ってきた可能性が高い
             // リダイレクトループを防ぐため、lineUserId取得のみ行う
             const urlStep = searchParams.get('step');
-            if (urlStep === '2') {
-                console.log('🔵 [LIFF] step=2 detected, simplified init to prevent loop');
+            if (urlStep === '6') {
+                console.log('🔵 [LIFF] step=6 detected, simplified init to prevent loop');
                 try {
                     const initialized = await initializeLiff();
                     setLiffInitialized(initialized);
                     if (initialized && isLineLoggedIn()) {
                         const lineProfile = await getLineProfile();
                         if (lineProfile) {
-                            console.log('🔵 [LIFF] Got profile from step=2, userId:', lineProfile.userId.slice(0, 8) + '...');
+                            console.log('🔵 [LIFF] Got profile from step=6, userId:', lineProfile.userId.slice(0, 8) + '...');
                             setLineUserId(lineProfile.userId);
                         }
                     }
                 } catch (error) {
-                    console.warn('🔵 [LIFF] Init failed in step=2 mode:', error);
+                    console.warn('🔵 [LIFF] Init failed in step=6 mode:', error);
                 }
                 return; // step変更なし、ループ防止
             }
@@ -111,8 +118,10 @@ function OnboardingContent() {
                     if (lineProfile) {
                         console.log('🔵 [LIFF] Got profile, userId:', lineProfile.userId.slice(0, 8) + '...');
                         setLineUserId(lineProfile.userId);
-                        // LINE連携済みの場合はStep 2から開始
-                        setStep(2);
+                        // LINE連携済み＆Step 5にいる場合は確認画面へ
+                        if (step === 5) {
+                            setStep(6);
+                        }
                     }
                 } else {
                     console.log('🔵 [LIFF] Not logged in or init failed');
@@ -198,8 +207,8 @@ function OnboardingContent() {
     // LINE友達登録完了後にアプリに戻ってきた場合の処理
     const handleLineFriendAdded = async () => {
         // LIFF経由でlineUserIdを取得する場合はここで処理
-        // 現在はスキップしてStep 2へ進む
-        setStep(2);
+        // 確認画面（Step 6）へ進む
+        setStep(6);
     };
 
     if (loading || !user) {
@@ -222,7 +231,131 @@ function OnboardingContent() {
                     <p className="text-gray-500 text-sm mt-2">次のトキメキを逃さないための<br />行動判断エージェント</p>
                 </div>
 
+                {/* Step 1: キャラ選択 */}
                 {step === 1 && (
+                    <div className="w-full bg-white p-6 rounded-2xl shadow-sm animate-in fade-in duration-500">
+                        <h2 className="text-lg font-bold mb-4 text-center">お気に入りのキャラを選んでね</h2>
+                        <p className="text-xs text-center text-gray-400 mb-4">複数選択できます</p>
+                        <div className="flex flex-wrap gap-2 justify-center mb-6">
+                            {CHARACTERS.map(char => (
+                                <button
+                                    key={char}
+                                    onClick={() => toggleFavorite(char)}
+                                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${profile.favorites.includes(char)
+                                        ? 'bg-pink-500 text-white shadow-md transform scale-105'
+                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                        }`}
+                                >
+                                    {char}
+                                </button>
+                            ))}
+                        </div>
+                        <button
+                            onClick={() => setStep(2)}
+                            disabled={profile.favorites.length === 0}
+                            className="w-full bg-gray-800 text-white py-3 rounded-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            次へ
+                        </button>
+                    </div>
+                )}
+
+                {/* Step 2: エリア選択 */}
+                {step === 2 && (
+                    <div className="w-full bg-white p-6 rounded-2xl shadow-sm animate-in fade-in duration-500">
+                        <h2 className="text-lg font-bold mb-4 text-center">よく行くエリアは？</h2>
+                        <p className="text-xs text-center text-gray-400 mb-4">複数選択できます</p>
+                        <div className="grid grid-cols-2 gap-3 mb-6">
+                            {AREAS.map(area => (
+                                <button
+                                    key={area}
+                                    onClick={() => toggleArea(area)}
+                                    className={`p-3 rounded-xl text-sm font-medium border-2 transition-all ${(profile.areas || []).includes(area)
+                                        ? 'border-pink-500 bg-pink-50 text-pink-700'
+                                        : 'border-transparent bg-gray-100 text-gray-600'
+                                        }`}
+                                >
+                                    {area}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="flex gap-3">
+                            <button onClick={() => setStep(1)} className="flex-1 py-3 text-gray-500 font-medium">戻る</button>
+                            <button
+                                onClick={() => setStep(3)}
+                                disabled={(profile.areas || []).length === 0}
+                                className="flex-1 bg-gray-800 text-white py-3 rounded-xl font-bold disabled:opacity-50"
+                            >
+                                次へ
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Step 3: 店舗選択 */}
+                {step === 3 && (
+                    <div className="w-full bg-white p-6 rounded-2xl shadow-sm animate-in fade-in duration-500">
+                        <h2 className="text-lg font-bold mb-4 text-center">よく行く店は？</h2>
+                        <p className="text-xs text-center text-gray-400 mb-4">複数選択できます</p>
+                        <div className="grid grid-cols-2 gap-3 mb-6">
+                            {POST_SHOPS.map(shop => (
+                                <button
+                                    key={shop}
+                                    onClick={() => toggleShop(shop)}
+                                    className={`p-3 rounded-xl text-sm font-medium border-2 transition-all ${(profile.preferredShops || []).includes(shop)
+                                        ? 'border-pink-500 bg-pink-50 text-pink-700'
+                                        : 'border-transparent bg-gray-100 text-gray-600'
+                                        }`}
+                                >
+                                    {shop}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="flex gap-3">
+                            <button onClick={() => setStep(2)} className="flex-1 py-3 text-gray-500 font-medium">戻る</button>
+                            <button
+                                onClick={() => setStep(4)}
+                                className="flex-1 bg-gray-800 text-white py-3 rounded-xl font-bold"
+                            >
+                                次へ
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Step 4: シール種類選択 */}
+                {step === 4 && (
+                    <div className="w-full bg-white p-6 rounded-2xl shadow-sm animate-in fade-in duration-500">
+                        <h2 className="text-lg font-bold mb-4 text-center">欲しいシールの種類は？</h2>
+                        <p className="text-xs text-center text-gray-400 mb-4">複数選択できます</p>
+                        <div className="grid grid-cols-2 gap-3 mb-6 max-h-60 overflow-y-auto">
+                            {STICKER_TYPES.map(type => (
+                                <button
+                                    key={type}
+                                    onClick={() => toggleStickerType(type)}
+                                    className={`p-3 rounded-xl text-sm font-medium border-2 transition-all ${(profile.preferredStickerTypes || []).includes(type)
+                                        ? 'border-pink-500 bg-pink-50 text-pink-700'
+                                        : 'border-transparent bg-gray-100 text-gray-600'
+                                        }`}
+                                >
+                                    {type}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="flex gap-3">
+                            <button onClick={() => setStep(3)} className="flex-1 py-3 text-gray-500 font-medium">戻る</button>
+                            <button
+                                onClick={() => setStep(5)}
+                                className="flex-1 bg-gray-800 text-white py-3 rounded-xl font-bold"
+                            >
+                                次へ
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Step 5: LINE通知設定 */}
+                {step === 5 && (
                     <div className="w-full bg-white p-6 rounded-2xl shadow-sm animate-in fade-in duration-500">
                         <h2 className="text-lg font-bold mb-2 text-center">
                             <MessageCircle className="w-6 h-6 inline-block mr-2 text-[#06C755]" />
@@ -258,145 +391,26 @@ function OnboardingContent() {
                             </div>
                         )}
 
-                        <button
-                            onClick={handleLineFriendAdded}
-                            className={`w-full py-3 rounded-xl font-bold transition-colors ${
-                                lineUserId 
-                                    ? 'bg-gray-800 text-white' 
-                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                            }`}
-                        >
-                            {lineUserId ? '次へ' : '友達追加したので次へ'}
-                        </button>
+                        <div className="flex gap-3">
+                            <button onClick={() => setStep(4)} className="flex-1 py-3 text-gray-500 font-medium">戻る</button>
+                            <button
+                                onClick={handleLineFriendAdded}
+                                className={`flex-1 py-3 rounded-xl font-bold transition-colors ${
+                                    lineUserId 
+                                        ? 'bg-gray-800 text-white' 
+                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                }`}
+                            >
+                                {lineUserId ? '次へ' : '友達追加したので次へ'}
+                            </button>
+                        </div>
 
                         <button
-                            onClick={() => setStep(2)}
+                            onClick={() => setStep(6)}
                             className="w-full py-2 mt-2 text-gray-400 text-sm"
                         >
                             あとで設定する（スキップ）
                         </button>
-                    </div>
-                )}
-
-                {step === 2 && (
-                    <div className="w-full bg-white p-6 rounded-2xl shadow-sm animate-in fade-in duration-500">
-                        <h2 className="text-lg font-bold mb-4 text-center">お気に入りのキャラを選んでね</h2>
-                        <p className="text-xs text-center text-gray-400 mb-4">複数選択できます</p>
-                        <div className="flex flex-wrap gap-2 justify-center mb-6">
-                            {CHARACTERS.map(char => (
-                                <button
-                                    key={char}
-                                    onClick={() => toggleFavorite(char)}
-                                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${profile.favorites.includes(char)
-                                        ? 'bg-pink-500 text-white shadow-md transform scale-105'
-                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                        }`}
-                                >
-                                    {char}
-                                </button>
-                            ))}
-                        </div>
-                        <div className="flex gap-3">
-                            <button onClick={() => setStep(1)} className="flex-1 py-3 text-gray-500 font-medium">戻る</button>
-                            <button
-                                onClick={() => setStep(3)}
-                                disabled={profile.favorites.length === 0}
-                                className="flex-1 bg-gray-800 text-white py-3 rounded-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                次へ
-                            </button>
-                        </div>
-                    </div>
-                )}
-
-                {step === 3 && (
-                    <div className="w-full bg-white p-6 rounded-2xl shadow-sm animate-in fade-in duration-500">
-                        <h2 className="text-lg font-bold mb-4 text-center">よく行くエリアは？</h2>
-                        <p className="text-xs text-center text-gray-400 mb-4">複数選択できます</p>
-                        <div className="grid grid-cols-2 gap-3 mb-6">
-                            {AREAS.map(area => (
-                                <button
-                                    key={area}
-                                    onClick={() => toggleArea(area)}
-                                    className={`p-3 rounded-xl text-sm font-medium border-2 transition-all ${(profile.areas || []).includes(area)
-                                        ? 'border-pink-500 bg-pink-50 text-pink-700'
-                                        : 'border-transparent bg-gray-100 text-gray-600'
-                                        }`}
-                                >
-                                    {area}
-                                </button>
-                            ))}
-                        </div>
-                        <div className="flex gap-3">
-                            <button onClick={() => setStep(2)} className="flex-1 py-3 text-gray-500 font-medium">戻る</button>
-                            <button
-                                onClick={() => setStep(4)}
-                                disabled={(profile.areas || []).length === 0}
-                                className="flex-1 bg-gray-800 text-white py-3 rounded-xl font-bold disabled:opacity-50"
-                            >
-                                次へ
-                            </button>
-                        </div>
-                    </div>
-                )}
-
-                {step === 4 && (
-                    <div className="w-full bg-white p-6 rounded-2xl shadow-sm animate-in fade-in duration-500">
-                        <h2 className="text-lg font-bold mb-4 text-center">よく行く店は？</h2>
-                        <p className="text-xs text-center text-gray-400 mb-4">複数選択できます</p>
-                        <div className="grid grid-cols-2 gap-3 mb-6">
-                            {POST_SHOPS.map(shop => (
-                                <button
-                                    key={shop}
-                                    onClick={() => toggleShop(shop)}
-                                    className={`p-3 rounded-xl text-sm font-medium border-2 transition-all ${(profile.preferredShops || []).includes(shop)
-                                        ? 'border-pink-500 bg-pink-50 text-pink-700'
-                                        : 'border-transparent bg-gray-100 text-gray-600'
-                                        }`}
-                                >
-                                    {shop}
-                                </button>
-                            ))}
-                        </div>
-                        <div className="flex gap-3">
-                            <button onClick={() => setStep(3)} className="flex-1 py-3 text-gray-500 font-medium">戻る</button>
-                            <button
-                                onClick={() => setStep(5)}
-                                className="flex-1 bg-gray-800 text-white py-3 rounded-xl font-bold"
-                            >
-                                次へ
-                            </button>
-                        </div>
-                    </div>
-                )}
-
-                {step === 5 && (
-                    <div className="w-full bg-white p-6 rounded-2xl shadow-sm animate-in fade-in duration-500">
-                        <h2 className="text-lg font-bold mb-4 text-center">欲しいシールの種類は？</h2>
-                        <p className="text-xs text-center text-gray-400 mb-4">複数選択できます</p>
-                        <div className="grid grid-cols-2 gap-3 mb-6 max-h-60 overflow-y-auto">
-                            {STICKER_TYPES.map(type => (
-                                <button
-                                    key={type}
-                                    onClick={() => toggleStickerType(type)}
-                                    className={`p-3 rounded-xl text-sm font-medium border-2 transition-all ${(profile.preferredStickerTypes || []).includes(type)
-                                        ? 'border-pink-500 bg-pink-50 text-pink-700'
-                                        : 'border-transparent bg-gray-100 text-gray-600'
-                                        }`}
-                                >
-                                    {type}
-                                </button>
-                            ))}
-                        </div>
-                        <div className="flex gap-3">
-                            <button onClick={() => setStep(4)} className="flex-1 py-3 text-gray-500 font-medium">戻る</button>
-                            <button
-                                onClick={() => setStep(6)}
-                                className="flex-1 bg-gray-800 text-white py-3 rounded-xl font-bold"
-                            >
-                                次へ
-                            </button>
-                        </div>
                     </div>
                 )}
 
