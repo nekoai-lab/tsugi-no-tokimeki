@@ -74,23 +74,23 @@ function OnboardingContent() {
         const initLiff = async () => {
             console.log('🔵 [LIFF] Starting initialization...');
             
-            // step=6 の場合は LIFF 経由で戻ってきた可能性が高い
-            // リダイレクトループを防ぐため、lineUserId取得のみ行う
+            // step=5 の場合は LIFF 経由で戻ってきた可能性が高い
+            // リダイレクトループを防ぐため、lineUserId取得のみ行い、stepは変更しない
             const urlStep = searchParams.get('step');
-            if (urlStep === '6') {
-                console.log('🔵 [LIFF] step=6 detected, simplified init to prevent loop');
+            if (urlStep === '5') {
+                console.log('🔵 [LIFF] step=5 detected, simplified init to prevent loop');
                 try {
                     const initialized = await initializeLiff();
                     setLiffInitialized(initialized);
                     if (initialized && isLineLoggedIn()) {
                         const lineProfile = await getLineProfile();
                         if (lineProfile) {
-                            console.log('🔵 [LIFF] Got profile from step=6, userId:', lineProfile.userId.slice(0, 8) + '...');
+                            console.log('🔵 [LIFF] Got profile from step=5, userId:', lineProfile.userId.slice(0, 8) + '...');
                             setLineUserId(lineProfile.userId);
                         }
                     }
                 } catch (error) {
-                    console.warn('🔵 [LIFF] Init failed in step=6 mode:', error);
+                    console.warn('🔵 [LIFF] Init failed in step=5 mode:', error);
                 }
                 return; // step変更なし、ループ防止
             }
