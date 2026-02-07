@@ -13,7 +13,7 @@ import RouteProposalModal from '@/components/RouteProposalModal/RouteProposalMod
 type ViewMode = 'list' | 'detail' | 'modal';
 
 export default function CalendarScreen() {
-    const { user } = useApp();
+    const { user, setIsModalOpen } = useApp();
     const [routeProposals, setRouteProposals] = useState<RouteProposal[]>([]);
     const [viewMode, setViewMode] = useState<ViewMode>('list');
     const [selectedProposal, setSelectedProposal] = useState<RouteProposal | null>(null);
@@ -38,9 +38,10 @@ export default function CalendarScreen() {
                 const today = new Date().toISOString().split('T')[0];
                 setSelectedDate(today);
                 setViewMode('modal');
+                setIsModalOpen(true);
             }
         }
-    }, []);
+    }, [setIsModalOpen]);
 
     const handleDateClick = (proposal: RouteProposal) => {
         setSelectedProposal(proposal);
@@ -51,11 +52,13 @@ export default function CalendarScreen() {
         const today = new Date().toISOString().split('T')[0];
         setSelectedDate(today);
         setViewMode('modal');
+        setIsModalOpen(true);
     };
 
     const handleModalConfirm = () => {
         setViewMode('list');
         setSelectedDate('');
+        setIsModalOpen(false);
         // URLパラメータをクリア
         if (typeof window !== 'undefined') {
             window.history.replaceState({}, '', window.location.pathname);
@@ -165,6 +168,7 @@ export default function CalendarScreen() {
                     onClose={() => {
                         setViewMode('list');
                         setSelectedDate('');
+                        setIsModalOpen(false);
                         if (typeof window !== 'undefined') {
                             window.history.replaceState({}, '', window.location.pathname);
                         }

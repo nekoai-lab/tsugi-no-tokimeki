@@ -14,6 +14,9 @@ interface AppContextType {
   suggestions: Suggestion | null;
   loading: boolean;
   signOut: () => Promise<void>;
+  // モーダル表示中かどうか（ナビ・FAB非表示用）
+  isModalOpen: boolean;
+  setIsModalOpen: (open: boolean) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -27,6 +30,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [posts, setPosts] = useState<Post[]>([]);
   const [events, setEvents] = useState<StoreEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   
   // クロージャ問題を避けるためrefで状態を追跡
   const authReadyRef = useRef(false);
@@ -262,6 +266,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         suggestions,
         loading,
         signOut: handleSignOut,
+        isModalOpen,
+        setIsModalOpen,
       }}
     >
       {children}
