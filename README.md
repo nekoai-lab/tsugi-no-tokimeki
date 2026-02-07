@@ -9,6 +9,8 @@
 ![Firebase](https://img.shields.io/badge/Firebase-Firestore-orange?logo=firebase)
 ![Cloud Run](https://img.shields.io/badge/Cloud%20Run-Deployed-4285F4?logo=googlecloud)
 
+🚀 **デモ**: [https://tsugi-no-tokimeki-265901745615.asia-northeast1.run.app](https://tsugi-no-tokimeki-265901745615.asia-northeast1.run.app/)
+
 ## 📖 プロジェクト概要
 
 **Tsugi no Tokimeki** は、お気に入りのキャラグッズ（シール）の目撃情報をリアルタイムで共有し、AIがシールを見に行くスケジュールを立ててユーザーに提案するWebアプリケーションです。
@@ -17,7 +19,36 @@
 - 🤖 **Vertex AI (Gemini 2.5)** による行動判断 ✅
 - ⏰ **Cloud Scheduler** で朝8時・夕18時に自動分析 ✅
 - 📅 ユーザーの空き時間 × イベント情報のマッチング
-- 🔔 LINE通知でプッシュ通知 実装中
+- 🔔 **LINE通知** でプッシュ通知 ✅
+
+---
+
+## 🎯 解決する課題
+
+### 背景：平成女児ブームとシール入手困難
+
+2025年、**平成女児ブーム**の影響でシール帳文化が再来。しかし需要の急増により：
+
+- 🏃 入荷情報が流れると店舗に人が殺到
+- 📱 SNSに張り付いて情報収集する日々
+- 😰 店舗側も問い合わせ対応に追われる
+- 💸 転売による価格高騰
+
+### 私たちの解決策
+
+**「シールを探しに行く1日を楽しむ」** ためのエージェントを開発。
+
+- ✅ AIが最適な行動スケジュールを提案
+- ✅ 自分の興味（キャラ・エリア）に絞った情報だけを表示
+- ✅ LINE通知で必要な情報だけをプッシュ
+
+---
+
+## 👥 対象ユーザー
+
+- シール帳作りを楽しみたい人
+- 情報収集や行動判断が苦手な人
+- 平成女児文化・キャラクターグッズ界隈のファン
 
 ---
 
@@ -49,6 +80,7 @@ graph TD
     subgraph "Client (Browser/PWA)"
         UI[Next.js Frontend<br/>React UI]
         AuthSDK[Firebase Auth SDK]
+        LIFF[LINE LIFF SDK]
     end
     
     subgraph "Google Cloud Platform"
@@ -68,12 +100,14 @@ graph TD
     end
     
     subgraph "External Services ✅"
-        LINE[LINE Messaging API<br/>📱 プッシュ通知]
+        LINE[LINE Platform<br/>LIFF認証 + Messaging API]
     end
     
     User <--> UI
     UI --> AuthSDK
     AuthSDK <--> Auth
+    UI --> LIFF
+    LIFF <-.->|"認証（任意）"| LINE
     UI <--> API
     API <--> Firestore
     Scheduler -.->|"定期トリガー"| API
@@ -248,7 +282,7 @@ tsugi-no-tokimeki/
 | **UI Library** | React | 19.x | コンポーネントアーキテクチャ |
 | **Styling** | Tailwind CSS | 4.x | ユーティリティファースト CSS |
 | **Database** | Firestore | - | NoSQL リアルタイムDB |
-| **Auth** | Firebase Auth | - | 匿名認証 |
+| **Auth** | Firebase Auth + LINE LIFF | - | 匿名認証 + LINE連携（任意） |
 | **Icons** | Lucide React | - | SVG アイコン |
 | **Hosting** | Cloud Run | - | コンテナホスティング |
 | **CI/CD** | Cloud Build | - | GitHub連携自動デプロイ |
@@ -575,89 +609,20 @@ LINE_CHANNEL_SECRET=your_channel_secret
 
 ---
 
-## 👥 共同開発オンボーディング
+## 👥 開発チーム
 
-### 1. How we work
+本プロジェクトは **2人チーム** で開発しました。
 
-- `main` ブランチへの直接 push は禁止（Branch Protection 設定済み）
-- 機能追加・修正は **PR（Pull Request）** 経由で行う
-- **Secrets（APIキー等）は絶対にコミットしない**
-- ローカル開発は Firebase Emulator を使用
+| メンバー | 役割 |
+|---------|------|
+| [yumemiru-masomi](https://github.com/yumemiru-masomi) | UI/UX デザイン・フロントエンド |
+| [nekoai-lab](https://github.com/nekoai-lab) | バックエンド・インフラ・AI連携 |
 
-### 2. Prerequisites
+### 開発スタイル
 
-- Node.js v20+
-- Java 11+ （Firebase Emulator に必要）
-  - https://adoptium.net/ からインストール
-
-### 3. Setup
-
-```bash
-# 1. clone
-git clone https://github.com/nekoai-lab/tsugi-no-tokimeki.git
-cd tsugi-no-tokimeki
-
-# 2. install
-npm install
-
-# 3. env
-cp .env.example .env.local
-
-# 4. emulator（別ターミナルで）
-npx firebase emulators:start
-
-# 5. dev
-npm run dev
-```
-
-http://localhost:3000 にアクセス
-
-### 4. Env vars
-
-`.env.local` に以下を設定：
-
-```env
-NEXT_PUBLIC_USE_FIREBASE_EMULATOR=true
-```
-
-> 本番用の Firebase API キーは不要です。
-> Emulator モードで動作します。
-
-### 5. Emulator UI
-
-Firebase Emulator UI: http://localhost:4000
-
-- Auth: http://localhost:9099
-- Firestore: http://localhost:8080
-
-### 6. PR steps
-
-```bash
-# 1. ブランチ作成
-git checkout -b feature/your-feature-name
-
-# 2. 変更をコミット
-git add .
-git commit -m "feat: 機能の説明"
-
-# 3. push
-git push origin feature/your-feature-name
-
-# 4. GitHub で PR を作成
-# 5. レビュー後、オーナーがマージ
-```
-
-### 7. Notes
-
-| 機能 | ローカル | 本番 |
-|------|---------|------|
-| Firebase Auth | Emulator | 本番 |
-| Firestore | Emulator | 本番 |
-| LINE通知 | モック（動作しない） | tsukineko が設定 |
-| Vertex AI | モック（動作しない） | tsukineko が設定 |
-
-> LINE / Vertex AI の本番設定は tsukineko が管理します。
-> ローカルではモック実装で動作確認してください。
+- GitHub Flow（PR ベースの開発）
+- Firebase Emulator でローカル開発
+- Cloud Build による自動デプロイ
 
 ---
 
