@@ -82,24 +82,11 @@ const SYSTEM_INSTRUCTION = `あなたはシールを探すユーザーのため�
 \`\`\``;
 
 // Vertex AI initialization
+// Cloud Run上ではサービスアカウント認証が自動で行われる
 const initVertexAI = () => {
   const projectId = process.env.GOOGLE_CLOUD_PROJECT || 'carbon-zone-485401-e6';
   const location = 'asia-northeast1';
-
-  // 環境変数から認証情報を読み込む
-  const credentialsPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
   
-  if (!credentialsPath && !process.env.GOOGLE_CLOUD_CREDENTIALS) {
-    throw new Error('認証情報が設定されていません');
-  }
-
-  if (credentialsPath) {
-    return new VertexAI({
-      project: projectId,
-      location: location,
-    });
-  }
-
   return new VertexAI({
     project: projectId,
     location: location,
