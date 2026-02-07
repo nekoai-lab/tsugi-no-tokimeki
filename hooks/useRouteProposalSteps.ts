@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import type { Step } from '@/lib/routeProposalTypes';
 
 export function useRouteProposalSteps() {
@@ -6,9 +6,8 @@ export function useRouteProposalSteps() {
     const [isLoading, setIsLoading] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
 
-    useEffect(() => {
-        inputRef.current?.focus();
-    }, [step]);
+    // 自動フォーカスを削除 - ユーザーがタップした時のみキーボードが出る
+    // useEffect(() => { inputRef.current?.focus(); }, [step]); は削除
 
     return {
         step,

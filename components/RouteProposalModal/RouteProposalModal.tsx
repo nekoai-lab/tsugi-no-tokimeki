@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { XCircle } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { saveRouteProposal } from '@/lib/routeProposalService';
@@ -35,18 +35,37 @@ export default function RouteProposalModal({ onClose, onConfirm, selectedDate }:
 
     const today = new Date().toISOString().split('T')[0];
 
+    const chatContainerRef = useRef<HTMLDivElement>(null);
+    const isInitialMount = useRef(true);
+
     // モーダル表示時にbodyのスクロールを制御
     useEffect(() => {
         const originalOverflow = document.body.style.overflow;
         document.body.style.overflow = 'hidden';
+        
+        // 初回表示時はトップにスクロール
+        requestAnimationFrame(() => {
+            if (chatContainerRef.current) {
+                chatContainerRef.current.scrollTop = 0;
+            }
+        });
+        
         return () => {
             document.body.style.overflow = originalOverflow;
         };
     }, []);
 
+    // メッセージ追加時のみ末尾にスクロール（初回マウント時は除く）
     useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages, step, messagesEndRef]);
+        if (isInitialMount.current) {
+            isInitialMount.current = false;
+            return;
+        }
+        // メッセージが追加された時のみスクロール
+        if (messages.length > 1) {
+            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, [messages, messagesEndRef]);
 
     // プロフィールのエリアを参考にした候補を取得
     const getAreaCandidates = () => {
@@ -559,6 +578,7 @@ export default function RouteProposalModal({ onClose, onConfirm, selectedDate }:
 
                 {/* Chat Messages */}
                 <div
+                    ref={chatContainerRef}
                     className="flex-1 overflow-y-auto p-4 space-y-4 scrollable"
                     style={{
                         paddingBottom: step === 'complete' ? '0px' : '200px'
