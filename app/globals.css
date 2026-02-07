@@ -73,3 +73,59 @@ select {
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
 }
+
+/* オンボーディング: 下からふわっと出てくるアニメーション */
+@keyframes float-up {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-float-up {
+  animation: float-up 1.2s ease-out forwards;
+  opacity: 0;
+}
+
+/* スワイプ可能なスライダーコンテナ */
+.slider-container {
+  display: flex;
+  overflow-x: scroll;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.slider-container::-webkit-scrollbar {
+  display: none;
+}
+
+.slider-slide {
+  flex: 0 0 100%;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+/* ドットインジケーター */
+.dot-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #d1d5db;
+  transition: all 0.3s ease;
+}
+
+.dot-indicator.active {
+  width: 24px;
+  border-radius: 4px;
+  background-color: #ec4899;
+}
+
+/* オンボーディング背景グラデーション */
+.onboarding-bg {
+  background-image: linear-gradient(119deg, rgba(251, 213, 251, 1) 14%, rgba(149, 233, 243, 1));
+}
