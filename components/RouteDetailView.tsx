@@ -1,23 +1,23 @@
 "use client";
 
-import React, { useState } from 'react';
-import { ArrowLeft, MapPin, Clock, Trash2 } from 'lucide-react';
+import React from 'react';
+import { ArrowLeft, MapPin, Clock, RefreshCw } from 'lucide-react';
 import type { RouteProposal } from '@/lib/types';
 import { WEEKDAYS } from '@/lib/utils';
 
 interface RouteDetailViewProps {
     proposal: RouteProposal;
     onBack: () => void;
-    onDelete?: () => Promise<void>;
+    onRegenerate?: () => void;
+    onConfirm?: () => void;
 }
 
 export default function RouteDetailView({
     proposal,
     onBack,
-    onDelete,
+    onRegenerate,
+    onConfirm,
 }: RouteDetailViewProps) {
-    const [isDeleting, setIsDeleting] = useState(false);
-
     const date = new Date(proposal.date);
     const dateStr = `${date.getMonth() + 1}/${date.getDate()} (${WEEKDAYS[date.getDay()]})`;
 
@@ -40,20 +40,6 @@ export default function RouteDetailView({
             return proposal.area;
         }
         return 'エリア未設定';
-    };
-
-    const handleDelete = async () => {
-        if (!onDelete) return;
-        if (!confirm('このルートを削除しますか？')) return;
-
-        setIsDeleting(true);
-        try {
-            await onDelete();
-        } catch (error) {
-            console.error('Delete error:', error);
-            alert('削除に失敗しました');
-            setIsDeleting(false);
-        }
     };
 
     return (
@@ -140,23 +126,51 @@ export default function RouteDetailView({
 
                     {/* Summary */}
                     <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
-                        <p className="text-sm text-blue-800">
+                        <p className="text-sm text-blue-800 font-bold mb-2">
                             💡 効率的に{proposal.shops.length}店舗回れます！
                         </p>
+                        {proposal.supplementaryInfo && (
+                            <div className="mt-3 pt-3 border-t border-blue-200">
+                                <p className="text-xs font-bold text-blue-700 mb-2">📝 補足情報</p>
+                                <p className="text-xs text-blue-700 whitespace-pre-line leading-relaxed">
+                                    {proposal.supplementaryInfo}
+                                </p>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
 
-            {/* Delete Button */}
-            {onDelete && (
+            {/* Confirm Button */}
+            {onConfirm && (
                 <div className="p-4 border-t border-gray-100">
                     <button
-                        onClick={handleDelete}
-                        disabled={isDeleting}
-                        className="w-full bg-red-50 hover:bg-red-100 text-red-600 font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                        onClick={onConfirm}
+                        className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 mb-3"
                     >
-                        <Trash2 className="w-4 h-4" />
-                        {isDeleting ? '削除中...' : 'このルートを削除する'}
+                        ✓ このルートで行く
+                    </button>
+                    {onRegenerate && (
+                        <button
+                            onClick={onRegenerate}
+                            className="w-full bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
+                        >
+                            <RefreshCw className="w-4 h-4" />
+                            このルートを再生成する
+                        </button>
+                    )}
+                </div>
+            )}
+
+            {/* Regenerate Button (standalone if no confirm) */}
+            {!onConfirm && onRegenerate && (
+                <div className="p-4 border-t border-gray-100">
+                    <button
+                        onClick={onRegenerate}
+                        className="w-full bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
+                    >
+                        <RefreshCw className="w-4 h-4" />
+                        このルートを再生成する
                     </button>
                 </div>
             )}

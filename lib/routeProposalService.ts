@@ -2,6 +2,7 @@ import {
   collection,
   doc,
   addDoc,
+  getDoc,
   updateDoc,
   deleteDoc,
   query,
@@ -30,6 +31,7 @@ export async function saveRouteProposal(
     preferredShops: string[];
     shops: Shop[];
     totalTravelTime: number;
+    supplementaryInfo?: string;
   }
 ): Promise<string> {
   const routeProposalsRef = collection(
@@ -165,10 +167,63 @@ export async function getRouteProposalByDate(
     return null;
   }
 
-  const doc = snapshot.docs[0];
+  const d = snapshot.docs[0];
   return {
-    id: doc.id,
-    ...doc.data(),
+    id: d.id,
+    ...d.data(),
   } as RouteProposal;
+}
+
+/**
+ * IDでルート提案を取得
+ */
+export async function getRouteProposalById(
+  userId: string,
+  proposalId: string
+): Promise<RouteProposal | null> {
+  const proposalRef = doc(
+    db,
+    'artifacts',
+    appId,
+    'users',
+    userId,
+    'routeProposals',
+    proposalId
+  );
+
+  const docSnap = await getDoc(proposalRef);
+  if (!docSnap.exists()) return null;
+
+  return {
+    id: docSnap.id,
+    ...docSnap.data(),
+  } as RouteProposal;
+}
+
+/**
+ * ルート提案を上書き更新
+ */
+export async function updateRouteProposal(
+  userId: string,
+  proposalId: string,
+  data: {
+    shops: Shop[];
+    totalTravelTime: number;
+  }
+): Promise<void> {
+  const proposalRef = doc(
+    db,
+    'artifacts',
+    appId,
+    'users',
+    userId,
+    'routeProposals',
+    proposalId
+  );
+
+  await updateDoc(proposalRef, {
+    ...data,
+    updatedAt: serverTimestamp(),
+  });
 }
 

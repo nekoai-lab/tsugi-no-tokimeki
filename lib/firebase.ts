@@ -3,10 +3,14 @@ import {
   getAuth, 
   connectAuthEmulator
 } from 'firebase/auth';
-import { 
-  getFirestore, 
+import {
+  getFirestore,
   connectFirestoreEmulator
 } from 'firebase/firestore';
+import {
+  getStorage,
+  connectStorageEmulator
+} from 'firebase/storage';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'demo-api-key',
@@ -31,6 +35,7 @@ if (typeof window !== 'undefined') {
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+export const storage = getStorage(app);
 export const appId = 'tsugi-no-tokimeki';
 
 /**
@@ -55,6 +60,7 @@ if (typeof window !== 'undefined' && shouldUseEmulator() && !emulatorsConnected)
   try {
     connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
     connectFirestoreEmulator(db, '127.0.0.1', 8080);
+    connectStorageEmulator(storage, '127.0.0.1', 9199);
     emulatorsConnected = true;
     console.log('🔥 Firebase Emulators connected (localhost only)');
   } catch (e) {

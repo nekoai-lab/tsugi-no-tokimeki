@@ -18,6 +18,8 @@ export interface UserProfile {
     customShops?: string[];
     preferredStickerTypes?: string[];
     customStickerTypes?: string[];
+    startTime?: string; // "10:00"
+    endTime?: string;   // "18:00"
     availability: Record<string, string[]>;
     lineUserId?: string;
     notificationPreferences?: NotificationPreferences;
@@ -34,6 +36,7 @@ export interface Post {
     areaMasked: string;
     shopName?: string;
     postDate?: string; // "2026-02-02T14:30"
+    likes?: string[]; // いいねしたユーザーのUID配列
     createdAt?: Timestamp;
 }
 
@@ -76,12 +79,21 @@ export interface RouteProposal {
     startTime?: string; // "10:00"
     endTime?: string; // "16:00"
     preferredShops?: string[]; // ["東急ハンズ", "LOFT"] など
+    supplementaryInfo?: string; // AIが生成した補足情報・アドバイス
     // 古い構造（後方互換性のため）
     area?: string; // 単一の場所（古いデータ用）
     timeSlot?: 'morning' | 'afternoon' | 'allday'; // 古いデータ用
     shops: Shop[];
     totalTravelTime: number; // 分
     confirmed: boolean; // 「このルートで行く！」を押したかどうか
+    createdAt?: Timestamp;
+}
+
+export interface StickerAlbumPost {
+    id: string;
+    userId: string;
+    imageUrl: string;
+    caption?: string;
     createdAt?: Timestamp;
 }
 
