@@ -9,8 +9,6 @@
 ![Firebase](https://img.shields.io/badge/Firebase-Firestore-orange?logo=firebase)
 ![Cloud Run](https://img.shields.io/badge/Cloud%20Run-Deployed-4285F4?logo=googlecloud)
 
-🚀 **デモ**: [https://tsugi-no-tokimeki-265901745615.asia-northeast1.run.app](https://tsugi-no-tokimeki-265901745615.asia-northeast1.run.app/)
-
 ## 📖 プロジェクト概要
 
 **Tsugi no Tokimeki** は、お気に入りのキャラグッズ（シール）の目撃情報をリアルタイムで共有し、AIがシールを見に行くスケジュールを立ててユーザーに提案するWebアプリケーションです。
