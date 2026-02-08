@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { VertexAI, type Tool } from '@google-cloud/vertexai';
+import { VertexAI } from '@google-cloud/vertexai';
 import type { Shop } from '@/lib/types';
 
 interface RouteProposalRequest {
@@ -112,7 +112,7 @@ function buildUserMessage(body: RouteProposalRequest): string {
 
   // 再生成リクエストの場合
   if (existingProposal && modificationRequest) {
-    return `以下の既存のルート提案を、ユーザーのリクエストに基づいて修正してください。Google検索で最新の店舗情報も調べてね！
+    return `以下の既存のルート提案を、ユーザーのリクエストに基づいて修正してください。
 
 【既存のルート提案】
 ${existingProposal}
@@ -131,7 +131,7 @@ ${modificationRequest}
 修正リクエストを反映した新しいルートとタイムテーブルを提案してください！`;
   }
 
-  return `以下の条件でシール探しのスケジュールを考えてください。Google検索で最新の店舗情報も調べてね！
+  return `以下の条件でシール探しのスケジュールを考えてください。
 
 【ユーザー情報】
 - お気に入りキャラ: ${favorites.join(', ') || '特になし'}
@@ -209,13 +209,14 @@ export async function POST(request: NextRequest) {
 
     const userMessage = buildUserMessage(body);
 
-    const googleSearchTool: Tool = {
-      googleSearch: {},
-    } as Tool;
+    // NOTE: Google Search Tool は開発段階ではコスト削減のため無効化
+    // 本番リリース後、必要に応じて以下のように有効化できます:
+    // import { type Tool } from '@google-cloud/vertexai';
+    // const googleSearchTool: Tool = { googleSearch: {} } as Tool;
+    // tools: [googleSearchTool],
 
     const result = await generativeModel.generateContent({
       contents: [{ role: 'user', parts: [{ text: userMessage }] }],
-      tools: [googleSearchTool],
     });
 
     const responseText = result.response.candidates?.[0]?.content?.parts
