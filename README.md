@@ -17,7 +17,7 @@
 
 - 📍 コミュニティからの目撃情報をリアルタイム収集
 - 🤖 **Vertex AI (Gemini 2.5)** による行動判断 ✅
-- ⏰ **Cloud Scheduler** で朝8時・夕18時に自動分析 ✅
+- ⏰ **Cloud Scheduler** で朝8時・夕18時に自動分析、毎朝9時にルート自動生成 ✅
 - 📅 ユーザーの空き時間 × イベント情報のマッチング
 - 🔔 **LINE通知** でプッシュ通知 ✅
 
@@ -56,15 +56,18 @@
 
 | 機能 | 説明 | 状態 |
 |------|------|------|
-| **オンボーディング** | キャラ・エリア・ショップ・シール種類・LINE通知の設定（6ステップ） | ✅ 実装済み |
+| **オンボーディング** | キャラ・エリア・ショップ・シール種類・時間指定・LINE通知の設定（7ステップ） | ✅ 実装済み |
 | **投稿機能** | 目撃情報（見た/買えた/売り切れ）の投稿 | ✅ 実装済み |
-| **フィード表示** | コミュニティ投稿のリアルタイム表示・フィルター機能 | ✅ 実装済み |
+| **フィード表示** | コミュニティ投稿のリアルタイム表示・フィルター機能・いいね機能 | ✅ 実装済み |
 | **行動判断 AI** | 今動くべきかの判断と根拠表示（For You画面） | ✅ 実装済み |
 | **Vertex AI 統合** | Gemini 2.5 Flash による本格的なAI推論 | ✅ 実装済み |
-| **Cloud Scheduler** | 朝8時+夕18時の定期分析 | ✅ 実装済み |
+| **Cloud Scheduler** | 朝8時+夕18時の定期分析、毎朝9時の自動ルート生成 | ✅ 実装済み |
 | **ルート提案 AI** | AIがショップ巡回スケジュールを作成 | ✅ 実装済み |
-| **カレンダー** | ルート提案の一覧表示・詳細確認・削除 | ✅ 実装済み |
-| **プロフィール編集** | ユーザー設定の編集機能 | ✅ 実装済み |
+| **ルート再生成** | AIとチャット形式でルートを修正・再提案 | ✅ 実装済み |
+| **カレンダー** | ルート提案の一覧表示・詳細確認・確定 | ✅ 実装済み |
+| **シールアルバム** | シール帳の写真を投稿・共有 | ✅ 実装済み |
+| **プロフィール編集** | ユーザー設定の編集機能（時間設定含む） | ✅ 実装済み |
+| **通知設定** | LINE通知のオン/オフ設定 | ✅ 実装済み |
 | **LINE連携** | LIFF ログイン + Messaging API でプッシュ通知 | ✅ 実装済み |
 
 ---
@@ -202,14 +205,23 @@ tsugi-no-tokimeki/
 │   │   │   └── page.tsx      # Feed画面 (/feed)
 │   │   ├── calendar/
 │   │   │   └── page.tsx      # Calendar画面 (/calendar)
-│   │   └── profile/
-│   │       └── page.tsx      # Profile画面 (/profile)
+│   │   ├── profile/
+│   │   │   └── page.tsx      # Profile画面 (/profile)
+│   │   ├── notification-settings/
+│   │   │   └── page.tsx      # 通知設定画面 (/notification-settings)
+│   │   └── route-result/
+│   │       └── [id]/
+│   │           └── page.tsx  # ルート結果詳細 (/route-result/[id])
 │   ├── onboarding/
 │   │   └── page.tsx          # オンボーディング (/onboarding)
 │   └── api/
 │       ├── analyze/          # 個別ユーザー分析 API
 │       │   └── route.ts
 │       ├── analyze-all/      # Cloud Scheduler用 全ユーザー分析 API
+│       │   └── route.ts
+│       ├── generate-daily-routes/  # 毎朝9時の自動ルート生成 API
+│       │   └── route.ts
+│       ├── notify-post/      # 投稿通知 API
 │       │   └── route.ts
 │       └── route-proposal/   # ルート提案 AI API
 │           └── route.ts
@@ -219,6 +231,10 @@ tsugi-no-tokimeki/
 │   ├── ProfileEditModal.tsx  # プロフィール編集モーダル
 │   ├── LineLoginButton.tsx   # LINE ログインボタン
 │   ├── RouteDetailView.tsx   # ルート提案詳細表示
+│   ├── RouteRegenerateModal.tsx  # ルート再生成モーダル（AIチャット）
+│   ├── ImageViewer.tsx       # 画像フルスクリーン表示
+│   ├── TimeEditModal.tsx     # 時間編集モーダル
+│   ├── StickerAlbumPostModal.tsx  # シールアルバム投稿モーダル
 │   ├── RouteProposalModal/   # ルート提案モーダル
 │   │   ├── RouteProposalModal.tsx
 │   │   └── components/       # ステップUI
@@ -244,26 +260,26 @@ tsugi-no-tokimeki/
 │   ├── useRouteProposalChat.ts   # AIチャット履歴管理
 │   └── useRouteProposalSteps.ts  # ステップUI制御
 ├── lib/                      # ユーティリティ・設定
-│   ├── firebase.ts           # Firebase初期化
+│   ├── firebase.ts           # Firebase初期化（Auth, Firestore, Storage）
 │   ├── liff.ts               # LINE LIFF SDK 初期化・操作
 │   ├── line.ts               # LINE Messaging API メッセージ構築
 │   ├── types.ts              # TypeScript型定義
 │   ├── routeProposalTypes.ts # ルート提案の型定義
 │   ├── routeProposalService.ts # Firestore CRUD (ルート提案)
 │   ├── routeProposalUtils.ts # ルート提案のフォーマット・パース
+│   ├── postService.ts        # 投稿のいいね機能
+│   ├── stickerAlbumService.ts # シールアルバム投稿サービス
 │   └── utils.ts              # ヘルパー関数・定数
-├── screens/                  # 画面コンポーネント
-│   ├── ForYouScreen.tsx      # For You画面のコンテンツ
-│   ├── FeedScreen.tsx        # Feed画面のコンテンツ
-│   ├── CalendarScreen.tsx    # Calendar画面のコンテンツ
-│   └── ProfileScreen.tsx     # Profile画面のコンテンツ
 ├── docs/
-│   └── DEVELOPMENT_ROADMAP.md  # 開発ロードマップ
+│   ├── DEVELOPMENT_ROADMAP.md  # 開発ロードマップ
+│   └── CLOUD_SCHEDULER_SETUP.md  # Cloud Scheduler設定ガイド
 ├── public/                   # 静的アセット
 ├── Dockerfile                # Cloud Run 用マルチステージビルド
 ├── .dockerignore             # Docker ビルド除外設定
 ├── cloudbuild.yaml           # Cloud Build パイプライン設定
 ├── firebase.json             # Firebase Emulator 設定
+├── firestore.rules           # Firestore セキュリティルール
+├── storage.rules             # Firebase Storage セキュリティルール
 ├── next.config.ts            # Next.js 設定 (standalone出力)
 ├── tsconfig.json             # TypeScript 設定
 ├── package.json              # 依存関係
@@ -282,6 +298,7 @@ tsugi-no-tokimeki/
 | **UI Library** | React | 19.x | コンポーネントアーキテクチャ |
 | **Styling** | Tailwind CSS | 4.x | ユーティリティファースト CSS |
 | **Database** | Firestore | - | NoSQL リアルタイムDB |
+| **Storage** | Firebase Storage | - | シールアルバム画像保存 |
 | **Auth** | Firebase Auth + LINE LIFF | - | 匿名認証 + LINE連携（任意） |
 | **Icons** | Lucide React | - | SVG アイコン |
 | **Hosting** | Cloud Run | - | コンテナホスティング |
@@ -538,7 +555,9 @@ Cloud Run                              LINE Messaging API
 |---------------|------|------|
 | `/api/analyze` | 個別ユーザー分析 | ✅ 実装済み |
 | `/api/analyze-all` | 全ユーザー一括分析 + プッシュ通知 | ✅ 実装済み |
-| `/api/route-proposal` | ルート提案（AI スケジュール作成） | ✅ 実装済み |
+| `/api/route-proposal` | ルート提案（AI スケジュール作成・再生成） | ✅ 実装済み |
+| `/api/generate-daily-routes` | 毎朝9時の自動ルート生成（Cloud Scheduler） | ✅ 実装済み |
+| `/api/notify-post` | 投稿通知 | ✅ 実装済み |
 | `/api/line-webhook` | LINE Webhook受信 | 🔄 予定 |
 
 ### 通知シナリオ
@@ -576,13 +595,13 @@ sequenceDiagram
 ```
 1. アプリにアクセス
        ↓
-2. オンボーディング Step 1-4（推しキャラ、エリア、ショップ、シール種類）
+2. オンボーディング Step 1-5（推しキャラ、エリア、ショップ、シール種類、時間指定）
        ↓
-3. Step 5「LINE通知を設定しよう」（任意）
+3. Step 6「LINE通知を設定しよう」（任意）
    → 友達追加後、挨拶メッセージの LIFF URL をタップ
    → lineUserId 取得
        ↓
-4. Step 6 確認・保存
+4. Step 7 確認・保存
        ↓
 5. ホーム画面へ
 ```
