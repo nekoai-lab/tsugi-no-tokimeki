@@ -19,6 +19,9 @@ interface RouteProposalRequest {
   }>;
   favorites: string[];
   userArea: string;
+  // 再生成用
+  existingProposal?: string;
+  modificationRequest?: string;
 }
 
 const SYSTEM_INSTRUCTION = `あなたはシールを探すユーザーのために最適なルートを調べてあげる明るくフレンドリーなアシスタントです。
@@ -58,6 +61,10 @@ const SYSTEM_INSTRUCTION = `あなたはシールを探すユーザーのため�
 ### 💡 補足情報
 
 直近の在庫情報やおすすめポイントをここに
+- 混雑する時間帯の情報
+- 効率的に回るためのコツ
+- 在庫状況の予測
+- その他役立つアドバイス
 
 ### 🎉 応援メッセージ
 
@@ -77,7 +84,8 @@ const SYSTEM_INSTRUCTION = `あなたはシールを探すユーザーのため�
       "travelTimeFromPrevious": null or 数値（分）
     }
   ],
-  "totalTravelTime": 合計移動時間（分）
+  "totalTravelTime": 合計移動時間（分）,
+  "supplementaryInfo": "補足情報のテキスト（改行可能、簡潔に3-4行程度）"
 }
 \`\`\``;
 
@@ -86,7 +94,7 @@ const SYSTEM_INSTRUCTION = `あなたはシールを探すユーザーのため�
 const initVertexAI = () => {
   const projectId = process.env.GOOGLE_CLOUD_PROJECT || 'carbon-zone-485401-e6';
   const location = 'asia-northeast1';
-  
+
   return new VertexAI({
     project: projectId,
     location: location,
@@ -94,13 +102,34 @@ const initVertexAI = () => {
 };
 
 function buildUserMessage(body: RouteProposalRequest): string {
-  const { areas, stickerType, stickerDesign, startTime, endTime, preferredShops, userPosts, favorites, userArea } = body;
+  const { areas, stickerType, stickerDesign, startTime, endTime, preferredShops, userPosts, favorites, userArea, existingProposal, modificationRequest } = body;
 
   const recentPosts = userPosts
     .filter(p => p.status === 'seen' || p.status === 'bought')
     .slice(0, 10)
     .map(p => `- ${p.areaMasked}で${p.character}を${p.status === 'bought' ? '購入' : '目撃'}`)
     .join('\n');
+
+  // 再生成リクエストの場合
+  if (existingProposal && modificationRequest) {
+    return `以下の既存のルート提案を、ユーザーのリクエストに基づいて修正してください。Google検索で最新の店舗情報も調べてね！
+
+【既存のルート提案】
+${existingProposal}
+
+【ユーザーの修正リクエスト】
+${modificationRequest}
+
+【基本条件】
+- 場所: ${areas.join('、')}
+- キャラクター: ${stickerDesign || '特になし'}
+- シールの種類: ${stickerType || '特になし'}
+- スケジュールを組む日程: 本日
+- スケジュールを組む時間: ${startTime}〜${endTime}
+- 特に回りたいお店: ${preferredShops.length > 0 ? preferredShops.join('、') : '特になし'}
+
+修正リクエストを反映した新しいルートとタイムテーブルを提案してください！`;
+  }
 
   return `以下の条件でシール探しのスケジュールを考えてください。Google検索で最新の店舗情報も調べてね！
 
@@ -126,12 +155,14 @@ function parseAIResponse(responseText: string): {
   message: string;
   shops: Shop[];
   totalTravelTime: number;
+  supplementaryInfo?: string;
 } {
   // Extract JSON block from the response
   const jsonMatch = responseText.match(/```json\s*([\s\S]*?)\s*```/);
 
   let shops: Shop[] = [];
   let totalTravelTime = 0;
+  let supplementaryInfo: string | undefined;
 
   if (jsonMatch) {
     try {
@@ -148,6 +179,7 @@ function parseAIResponse(responseText: string): {
         travelTimeFromPrevious: shop.travelTimeFromPrevious || undefined,
       }));
       totalTravelTime = parsed.totalTravelTime || 0;
+      supplementaryInfo = parsed.supplementaryInfo || undefined;
     } catch (e) {
       console.error('Failed to parse JSON from AI response:', e);
     }
@@ -158,7 +190,7 @@ function parseAIResponse(responseText: string): {
     .replace(/```json\s*[\s\S]*?\s*```/, '')
     .trim();
 
-  return { message, shops, totalTravelTime };
+  return { message, shops, totalTravelTime, supplementaryInfo };
 }
 
 export async function POST(request: NextRequest) {
@@ -194,12 +226,13 @@ export async function POST(request: NextRequest) {
       throw new Error('Empty response from Vertex AI');
     }
 
-    const { message, shops, totalTravelTime } = parseAIResponse(responseText);
+    const { message, shops, totalTravelTime, supplementaryInfo } = parseAIResponse(responseText);
 
     return NextResponse.json({
       message,
       shops,
       totalTravelTime,
+      supplementaryInfo,
     });
   } catch (error) {
     console.error('Route proposal API error:', error);

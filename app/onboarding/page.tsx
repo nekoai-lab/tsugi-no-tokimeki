@@ -6,17 +6,23 @@ import { useApp } from '@/contexts/AppContext';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db, appId } from '@/lib/firebase';
 import { CHARACTERS, AREAS, POST_SHOPS, STICKER_TYPES } from '@/lib/utils';
-import { Sparkles, MessageCircle, ExternalLink, Share2, CalendarDays, Bell } from 'lucide-react';
+import { Sparkles, MessageCircle, ExternalLink, Share2, CalendarDays, Bell, Clock } from 'lucide-react';
 import type { UserProfile } from '@/lib/types';
 import { initializeLiff, getLineProfile, isLineLoggedIn } from '@/lib/liff';
 
 // LINE公式アカウントの友達追加URL（lin.ee は友達追加画面、LIFF URLは挨拶メッセージで使用）
 const LINE_FRIEND_ADD_URL = 'https://lin.ee/TexjI38b';
 
+// 時間選択肢（10:00〜20:00）
+const TIME_OPTIONS = Array.from({ length: 11 }, (_, i) => {
+    const hour = i + 10;
+    return `${hour}:00`;
+});
+
 // LINE通知設定の内部ステップ番号
-const LINE_STEP = 12;
+const LINE_STEP = 13;
 // 確認画面の内部ステップ番号
-const CONFIRM_STEP = 13;
+const CONFIRM_STEP = 14;
 
 // ローディングコンポーネント
 function OnboardingLoading() {
@@ -50,10 +56,11 @@ export default function OnboardingPage() {
 // Step 7: キャラ選択
 // Step 8: エリア選択
 // Step 9: 店舗選択
-// Step 10: ありがとう画面（自動遷移）
-// Step 11: LINE通知案内画面（自動遷移）
-// Step 12: LINE通知設定（友達追加）
-// Step 13: 確認＆保存
+// Step 10: 時間指定
+// Step 11: ありがとう画面（自動遷移）
+// Step 12: LINE通知案内画面（自動遷移）
+// Step 13: LINE通知設定（友達追加）
+// Step 14: 確認＆保存
 function OnboardingContent() {
     const { user, userProfile, loading } = useApp();
     const router = useRouter();
@@ -76,14 +83,16 @@ function OnboardingContent() {
         areas: [],
         preferredShops: [],
         preferredStickerTypes: [],
+        startTime: '10:00',
+        endTime: '20:00',
         availability: {}
     });
     const [lineUserId, setLineUserId] = useState<string | null>(null);
     const [liffInitialized, setLiffInitialized] = useState(false);
 
-    // 自動遷移ロジック（Step 1, 2, 3, 5, 10, 11）
+    // 自動遷移ロジック（Step 1, 2, 3, 5, 11, 12）
     useEffect(() => {
-        if ([1, 2, 3, 5, 10, 11].includes(step)) {
+        if ([1, 2, 3, 5, 11, 12].includes(step)) {
             const timer = setTimeout(() => {
                 setStep(step + 1);
             }, 3000);
@@ -110,15 +119,24 @@ function OnboardingContent() {
     }, [step]);
 
     // スライダーを次のスライドに移動
+    // React state ではなく DOM の scrollLeft から現在位置を取得することで
+    // PC ブラウザで scroll イベントが遅延した場合でも正しく動作する
     const goToNextSlide = () => {
         const slider = sliderRef.current;
         if (!slider) return;
 
-        if (currentSlide < 2) {
-            // 次のスライドへスクロール
-            const slideWidth = slider.offsetWidth;
+        const slideWidth = slider.offsetWidth;
+        if (slideWidth === 0) return;
+
+        const currentPosition = slider.scrollLeft;
+        const currentSlideIndex = Math.round(currentPosition / slideWidth);
+
+        if (currentSlideIndex < 2) {
+            const nextSlide = currentSlideIndex + 1;
+            // インジケーターを即座に更新
+            setCurrentSlide(nextSlide);
             slider.scrollTo({
-                left: slideWidth * (currentSlide + 1),
+                left: slideWidth * nextSlide,
                 behavior: 'smooth'
             });
         } else {
@@ -331,11 +349,11 @@ function OnboardingContent() {
     }
 
     return (
-        <div className="flex flex-col min-h-[100dvh] onboarding-bg p-6 overflow-y-auto">
+        <div className="flex flex-col h-[100dvh] onboarding-bg p-6 overflow-y-auto overflow-x-hidden">
             <div className="flex-1 flex flex-col justify-center items-center max-w-md mx-auto w-full">
 
                 {/* ヘッダー: 選択ステップ（6以降、自動遷移画面を除く）でのみ表示 */}
-                {step >= 6 && step !== 10 && step !== 11 && step !== CONFIRM_STEP && (
+                {step >= 6 && step !== 11 && step !== 12 && step !== CONFIRM_STEP && (
                     <div className="mb-8 text-center">
                         <Sparkles className="w-12 h-12 text-pink-500 mx-auto mb-4" />
                         <h1 className="text-2xl font-bold text-gray-800">Tsugi no Tokimeki</h1>
@@ -378,7 +396,7 @@ function OnboardingContent() {
 
                 {/* Step 4: 機能紹介スライド（スワイプ式） */}
                 {step === 4 && (
-                    <div className="w-full flex flex-col items-center justify-center">
+                    <div className="w-full flex flex-col items-center justify-center overflow-hidden">
                         <div
                             ref={sliderRef}
                             className="slider-container w-full"
@@ -573,8 +591,69 @@ function OnboardingContent() {
                     </div>
                 )}
 
-                {/* Step 10: ありがとう画面（自動遷移） */}
+                {/* Step 10: 時間指定 */}
                 {step === 10 && (
+                    <div className="w-full bg-white p-6 rounded-2xl shadow-sm animate-in fade-in duration-500">
+                        <h2 className="text-lg font-bold mb-2 text-center">
+                            <Clock className="w-5 h-5 inline-block mr-1 text-pink-500" />
+                            探しに行ける時間帯は？
+                        </h2>
+                        <p className="text-xs text-center text-gray-400 mb-6">お出かけできる時間帯を教えてね</p>
+
+                        <div className="space-y-5 mb-6">
+                            <div>
+                                <label className="text-sm font-medium text-gray-600 mb-2 block">開始時間</label>
+                                <div className="grid grid-cols-4 gap-2">
+                                    {TIME_OPTIONS.filter(t => t < (profile.endTime || '20:00')).map(time => (
+                                        <button
+                                            key={`start-${time}`}
+                                            onClick={() => setProfile(prev => ({ ...prev, startTime: time }))}
+                                            className={`p-2 rounded-xl text-sm font-medium border-2 transition-all ${
+                                                profile.startTime === time
+                                                    ? 'border-pink-500 bg-pink-50 text-pink-700'
+                                                    : 'border-transparent bg-gray-100 text-gray-600'
+                                            }`}
+                                        >
+                                            {time}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="text-sm font-medium text-gray-600 mb-2 block">終了時間</label>
+                                <div className="grid grid-cols-4 gap-2">
+                                    {TIME_OPTIONS.filter(t => t > (profile.startTime || '10:00')).map(time => (
+                                        <button
+                                            key={`end-${time}`}
+                                            onClick={() => setProfile(prev => ({ ...prev, endTime: time }))}
+                                            className={`p-2 rounded-xl text-sm font-medium border-2 transition-all ${
+                                                profile.endTime === time
+                                                    ? 'border-pink-500 bg-pink-50 text-pink-700'
+                                                    : 'border-transparent bg-gray-100 text-gray-600'
+                                            }`}
+                                        >
+                                            {time}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button onClick={() => setStep(9)} className="flex-1 py-3 text-gray-500 font-medium">戻る</button>
+                            <button
+                                onClick={() => setStep(11)}
+                                className="flex-1 bg-gray-800 text-white py-3 rounded-xl font-bold"
+                            >
+                                次へ
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Step 11: ありがとう画面（自動遷移） */}
+                {step === 11 && (
                     <div className="w-full flex flex-col items-center justify-center text-center">
                         <p className="text-lg text-gray-700 leading-relaxed animate-float-up px-4">
                             教えてくれてありがとう！
@@ -582,8 +661,8 @@ function OnboardingContent() {
                     </div>
                 )}
 
-                {/* Step 11: LINE通知案内画面（自動遷移） */}
-                {step === 11 && (
+                {/* Step 12: LINE通知案内画面（自動遷移） */}
+                {step === 12 && (
                     <div className="w-full flex flex-col items-center justify-center text-center">
                         <div className="animate-float-up">
                             <MessageCircle className="w-12 h-12 text-[#06C755] mx-auto mb-6" />
@@ -595,7 +674,7 @@ function OnboardingContent() {
                     </div>
                 )}
 
-                {/* Step 12: LINE通知設定 */}
+                {/* Step 13: LINE通知設定 */}
                 {step === LINE_STEP && (
                     <div className="w-full bg-white p-6 rounded-2xl shadow-sm animate-in fade-in duration-500">
                         <h2 className="text-lg font-bold mb-2 text-center">
@@ -633,7 +712,7 @@ function OnboardingContent() {
                         )}
 
                         <div className="flex gap-3">
-                            <button onClick={() => setStep(9)} className="flex-1 py-3 text-gray-500 font-medium">戻る</button>{/* Step10は自動遷移なのでスキップ */}
+                            <button onClick={() => setStep(10)} className="flex-1 py-3 text-gray-500 font-medium">戻る</button>{/* Step11,12は自動遷移なのでスキップ */}
                             <button
                                 onClick={handleLineFriendAdded}
                                 className={`flex-1 py-3 rounded-xl font-bold transition-colors ${
@@ -655,7 +734,7 @@ function OnboardingContent() {
                     </div>
                 )}
 
-                {/* Step 13: 確認＆保存 */}
+                {/* Step 14: 確認＆保存 */}
                 {step === CONFIRM_STEP && (
                     <div className="w-full flex flex-col items-center justify-center text-center">
                         <p className="text-lg text-gray-700 leading-relaxed animate-float-up px-4">

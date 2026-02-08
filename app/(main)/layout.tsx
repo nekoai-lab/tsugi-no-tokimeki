@@ -1,13 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useApp } from '@/contexts/AppContext';
-import { Bell, Plus } from 'lucide-react';
-import NavButton from '@/components/NavButton';;
-import { Sparkles, Home, Calendar as CalendarIcon, User } from 'lucide-react';
+import { Plus } from 'lucide-react';
+import NavButton from '@/components/NavButton';
+import { Sparkles, Home, BookImage, User } from 'lucide-react';
 import PostModal from '@/components/PostModal';
-import NotificationSettingsModal from '@/components/NotificationSettingsModal';
+import StickerAlbumPostModal from '@/components/StickerAlbumPostModal';
 
 export default function MainLayout({
     children,
@@ -15,9 +15,10 @@ export default function MainLayout({
     children: React.ReactNode;
 }) {
     const [showPostModal, setShowPostModal] = useState(false);
-    const [showNotificationSettings, setShowNotificationSettings] = useState(false);
+    const [showStickerModal, setShowStickerModal] = useState(false);
     const { user, userProfile, loading, isModalOpen } = useApp();
     const router = useRouter();
+    const pathname = usePathname();
 
     // 認証チェックとリダイレクト処理を共通化
     useEffect(() => {
@@ -47,15 +48,6 @@ export default function MainLayout({
                         Tsugi no Tokimeki
                     </h1>
                     <div className="flex items-center gap-3">
-                        <button
-                            onClick={() => setShowNotificationSettings(true)}
-                            className="relative p-1 hover:bg-gray-100 rounded-full transition-colors"
-                        >
-                            <Bell className="w-6 h-6 text-gray-600" />
-                            {userProfile?.notificationPreferences?.enabled && userProfile?.lineUserId && (
-                                <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />
-                            )}
-                        </button>
                     </div>
                 </header>
             )}
@@ -65,10 +57,21 @@ export default function MainLayout({
                 {children}
             </main>
 
-            {/* Floating Action Button for Post - モーダル表示中は非表示 */}
-            {!isModalOpen && (
+            {/* Floating Action Button for Post - Feedタブのみ表示 */}
+            {!isModalOpen && pathname === '/feed' && (
                 <button
                     onClick={() => setShowPostModal(true)}
+                    className="absolute right-4 w-14 h-14 bg-gray-900 text-white rounded-full shadow-lg flex items-center justify-center hover:scale-105 transition-transform z-20"
+                    style={{ bottom: 'calc(6rem + env(safe-area-inset-bottom, 16px))' }}
+                >
+                    <Plus className="w-7 h-7" />
+                </button>
+            )}
+
+            {/* Floating Action Button for Sticker Album - シール帳タブのみ表示 */}
+            {!isModalOpen && pathname === '/calendar' && (
+                <button
+                    onClick={() => setShowStickerModal(true)}
                     className="absolute right-4 w-14 h-14 bg-gray-900 text-white rounded-full shadow-lg flex items-center justify-center hover:scale-105 transition-transform z-20"
                     style={{ bottom: 'calc(6rem + env(safe-area-inset-bottom, 16px))' }}
                 >
@@ -84,7 +87,7 @@ export default function MainLayout({
                 >
                     <NavButton href="/home" icon={Sparkles} label="For You" />
                     <NavButton href="/feed" icon={Home} label="Feed" />
-                    <NavButton href="/calendar" icon={CalendarIcon} label="Calendar" />
+                    <NavButton href="/calendar" icon={BookImage} label="シール帳" />
                     <NavButton href="/profile" icon={User} label="Profile" />
                 </nav>
             )}
@@ -94,10 +97,11 @@ export default function MainLayout({
                 <PostModal onClose={() => setShowPostModal(false)} />
             )}
 
-            {/* Notification Settings Modal */}
-            {showNotificationSettings && (
-                <NotificationSettingsModal onClose={() => setShowNotificationSettings(false)} />
+            {/* Sticker Album Post Modal */}
+            {showStickerModal && (
+                <StickerAlbumPostModal onClose={() => setShowStickerModal(false)} />
             )}
+
         </div>
     );
 }
