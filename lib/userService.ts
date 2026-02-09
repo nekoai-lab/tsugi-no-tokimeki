@@ -1,5 +1,6 @@
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db, appId } from './firebase';
+import type { UserProfile } from './types';
 
 /**
  * LINE User IDからcanonicalUidを取得または作成
@@ -43,5 +44,19 @@ export async function getCanonicalUid(
 
   // lineUserIdがない場合は現在のauth.uidを使用
   return currentAuthUid;
+}
+
+/**
+ * ユーザープロフィールを取得
+ * @param uid ユーザーID
+ * @returns UserProfile または null
+ */
+export async function getUserProfile(uid: string): Promise<UserProfile | null> {
+  const profileRef = doc(db, 'artifacts', appId, 'users', uid, 'profile', 'main');
+  const profileSnap = await getDoc(profileRef);
+  if (profileSnap.exists()) {
+    return profileSnap.data() as UserProfile;
+  }
+  return null;
 }
 
