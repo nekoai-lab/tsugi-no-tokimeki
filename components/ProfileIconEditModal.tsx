@@ -12,6 +12,18 @@ interface ProfileIconEditModalProps {
     currentPhotoUrl?: string;
 }
 
+// 既存アイコン一覧
+const EXISTING_ICONS = [
+    '/profile-icons/icon-1.png',
+    '/profile-icons/icon-2.png',
+    '/profile-icons/icon-3.png',
+    '/profile-icons/icon-4.png',
+    '/profile-icons/icon-5.png',
+    '/profile-icons/icon-6.png',
+    '/profile-icons/icon-7.png',
+    '/profile-icons/icon-8.png',
+];
+
 export default function ProfileIconEditModal({
     isOpen,
     onClose,
@@ -42,12 +54,25 @@ export default function ProfileIconEditModal({
         setSelectedFile(file);
     };
 
+    const handleSelectExistingIcon = (iconUrl: string) => {
+        setSelectedPhotoUrl(iconUrl);
+        setPreviewUrl('');
+        setSelectedFile(null);
+    };
+
     const handleSave = async () => {
+        // 既存アイコンを選択した場合は直接保存
+        if (selectedPhotoUrl && !selectedFile) {
+            onSave(selectedPhotoUrl);
+            onClose();
+            return;
+        }
+
+        // カスタム画像をアップロードする場合
         if (!user || !selectedFile) return;
 
         setUploading(true);
         try {
-            // Firebase Storageにアップロード
             const uploadedUrl = await uploadProfileIcon(user.uid, selectedFile);
             onSave(uploadedUrl);
             onClose();
@@ -118,6 +143,30 @@ export default function ProfileIconEditModal({
                             ✓ 画像を選択しました
                         </p>
                     )}
+
+                    {/* 既存アイコン選択 */}
+                    <div>
+                        <p className="text-sm font-bold text-gray-700 mb-3">または既存アイコンから選択</p>
+                        <div className="grid grid-cols-4 gap-3">
+                            {EXISTING_ICONS.map((iconUrl, index) => (
+                                <button
+                                    key={index}
+                                    onClick={() => handleSelectExistingIcon(iconUrl)}
+                                    className={`aspect-square rounded-full overflow-hidden border-2 transition-all ${
+                                        selectedPhotoUrl === iconUrl && !previewUrl
+                                            ? 'border-pink-500 ring-2 ring-pink-200'
+                                            : 'border-gray-200 hover:border-pink-300'
+                                    }`}
+                                >
+                                    <img
+                                        src={iconUrl}
+                                        alt={`アイコン${index + 1}`}
+                                        className="w-full h-full object-cover"
+                                    />
+                                </button>
+                            ))}
+                        </div>
+                    </div>
                 </div>
 
                 {/* Footer */}
@@ -131,7 +180,7 @@ export default function ProfileIconEditModal({
                     </button>
                     <button
                         onClick={handleSave}
-                        disabled={!selectedFile || uploading}
+                        disabled={(!selectedFile && !selectedPhotoUrl) || uploading}
                         className="flex-1 py-3 bg-pink-500 text-white font-bold rounded-xl hover:bg-pink-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {uploading ? 'アップロード中...' : '保存'}
