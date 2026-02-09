@@ -3,9 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useApp } from '@/contexts/AppContext';
-import { Plus } from 'lucide-react';
+import { BookOpen, Plus } from 'lucide-react';
 import NavButton from '@/components/NavButton';
-import { Sparkles, Home, BookImage, User } from 'lucide-react';
+import { Sparkles, Home, User } from 'lucide-react';
 import PostModal from '@/components/PostModal';
 import StickerAlbumPostModal from '@/components/StickerAlbumPostModal';
 
@@ -69,7 +69,7 @@ export default function MainLayout({
             )}
 
             {/* Floating Action Button for Sticker Album - シール帳タブのみ表示 */}
-            {!isModalOpen && pathname === '/calendar' && (
+            {!isModalOpen && pathname === '/sticker-book' && (
                 <button
                     onClick={() => setShowStickerModal(true)}
                     className="absolute right-4 w-14 h-14 bg-gray-900 text-white rounded-full shadow-lg flex items-center justify-center hover:scale-105 transition-transform z-20"
@@ -81,13 +81,13 @@ export default function MainLayout({
 
             {/* Bottom Navigation - モーダル表示中は非表示 */}
             {!isModalOpen && (
-                <nav 
+                <nav
                     className="absolute w-full bg-white border-t border-gray-100 px-6 py-3 flex justify-between items-center z-20"
                     style={{ bottom: 'env(safe-area-inset-bottom, 0px)', paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom, 0px))' }}
                 >
                     <NavButton href="/home" icon={Sparkles} label="For You" />
                     <NavButton href="/feed" icon={Home} label="Feed" />
-                    <NavButton href="/calendar" icon={BookImage} label="シール帳" />
+                    <NavButton href="/sticker-book" icon={BookOpen} label="シール帳" />
                     <NavButton href="/profile" icon={User} label="Profile" />
                 </nav>
             )}

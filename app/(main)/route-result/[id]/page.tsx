@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useApp } from '@/contexts/AppContext';
-import { getRouteProposalById, updateRouteProposal, confirmRouteProposal } from '@/lib/routeProposalService';
+import { getRouteProposalById, updateRouteProposal } from '@/lib/routeProposalService';
 import type { RouteProposal, Shop } from '@/lib/types';
 import RouteDetailView from '@/components/RouteDetailView';
 import RouteRegenerateModal from '@/components/RouteRegenerateModal';
@@ -30,21 +30,6 @@ export default function RouteResultPage() {
 
     const handleRegenerate = () => {
         setShowRegenerate(true);
-    };
-
-    const handleConfirm = async () => {
-        if (!user || !proposal) return;
-
-        await updateRouteProposal(user.uid, proposal.id, {
-            shops: proposal.shops,
-            totalTravelTime: proposal.totalTravelTime,
-        });
-
-        // Mark as confirmed
-        await confirmRouteProposal(user.uid, proposal.id);
-
-        // Navigate back to home
-        router.push('/home');
     };
 
     const handleRegenerateConfirm = async (shops: Shop[], totalTravelTime: number) => {
@@ -94,7 +79,6 @@ export default function RouteResultPage() {
                 proposal={proposal}
                 onBack={() => router.push('/home')}
                 onRegenerate={handleRegenerate}
-                onConfirm={handleConfirm}
             />
 
             {showRegenerate && (

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/contexts/AppContext';
 import { subscribeStickerAlbumPosts, deleteStickerAlbumPost } from '@/lib/stickerAlbumService';
-import { BookImage, MoreVertical, Trash2 } from 'lucide-react';
+import { MoreVertical, Trash2 } from 'lucide-react';
 import ImageViewer from '@/components/ImageViewer';
 import type { StickerAlbumPost } from '@/lib/types';
 
@@ -82,18 +82,8 @@ export default function StickerAlbumPage() {
 
     return (
         <div className="h-full flex flex-col">
-            <div className="p-4 pb-2">
-                <h2 className="text-lg font-bold flex items-center gap-2">
-                    <BookImage className="w-5 h-5 text-pink-500" />
-                    シール帳
-                </h2>
-            </div>
-
             {posts.length === 0 ? (
                 <div className="flex-1 flex flex-col items-center justify-center py-12">
-                    <div className="bg-gray-100 rounded-full p-6 mb-4">
-                        <BookImage className="w-12 h-12 text-gray-400" />
-                    </div>
                     <p className="text-gray-500 text-sm">まだ写真がありません</p>
                     <p className="text-gray-400 text-xs mt-1">右下の＋ボタンから投稿しよう</p>
                 </div>
