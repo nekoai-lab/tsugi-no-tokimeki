@@ -6,7 +6,7 @@ import { db, appId } from '@/lib/firebase';
 import { useApp } from '@/contexts/AppContext';
 import { getRelativeTime } from '@/lib/utils';
 import { addLike, removeLike } from '@/lib/postService';
-import { Heart, MapPin, Newspaper } from 'lucide-react';
+import { Heart, MapPin } from 'lucide-react';
 import type { Post, UserProfile } from '@/lib/types';
 
 type StatusFilter = 'all' | 'seen' | 'soldout';
@@ -141,12 +141,34 @@ export default function FeedPage() {
         return result;
     }, [posts, filter, selectedCharacter]);
 
-    // いいね数でソートしたトップ3
-    const topPosts = useMemo(() => {
-        return [...posts]
-            .sort((a, b) => (b.likes?.length || 0) - (a.likes?.length || 0))
-            .slice(0, 3);
-    }, [posts]);
+    // basePostsの最新3件（TOPカードのリスト表示用）
+    const topBasePosts = useMemo(() => {
+        return basePosts.slice(0, 3);
+    }, [basePosts]);
+
+    // ムード文生成（1-3件の時のみ）
+    const moodText = useMemo(() => {
+        if (basePosts.length === 0 || basePosts.length > 3) return '';
+
+        // 最頻キャラを取得
+        const charCounts: Record<string, number> = {};
+        basePosts.forEach(post => {
+            charCounts[post.character] = (charCounts[post.character] || 0) + 1;
+        });
+        
+        const topChar = Object.entries(charCounts).sort(([, a], [, b]) => b - a)[0];
+        if (!topChar) return '';
+        
+        const [char, count] = topChar;
+        
+        // 1種類のみの場合
+        if (Object.keys(charCounts).length === 1) {
+            return `${char}の報告が続いてるよ`;
+        }
+        
+        // 複数種類の場合
+        return `${char}の報告が${count}件あるよ`;
+    }, [basePosts]);
 
     const handleToggleLike = async (post: Post) => {
         if (!user) return;
@@ -169,71 +191,84 @@ export default function FeedPage() {
 
     return (
         <div className="pb-4">
-            {/* FOR YOU Card */}
-            {basePosts.length > 0 && (
-                <section className="p-4 animate-in fade-in duration-500">
-                    <div className="rounded-3xl p-6 shadow-lg relative overflow-hidden bg-gradient-to-br from-pink-500 to-rose-500 text-white">
-                        <div className="relative z-10">
-                            <div className="flex items-center gap-2 mb-3">
-                                <span className="text-sm font-bold opacity-80 uppercase tracking-wider">FOR YOU（2日以内）</span>
-                            </div>
-
-                            {/* サマリ行 */}
-                            <p className="text-base font-bold mb-3">
-                                {characterSummary.map(([char, count], idx) => (
-                                    <span key={char}>
-                                        {char} {count}件{idx < characterSummary.length - 1 ? ' / ' : ''}
-                                    </span>
-                                ))}
-                            </p>
-
-                            {/* キャラチップ */}
-                            <div className="flex flex-wrap gap-2">
-                                {characterSummary.map(([char, count]) => (
-                                    <button
-                                        key={char}
-                                        onClick={() => setSelectedCharacter(selectedCharacter === char ? null : char)}
-                                        className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
-                                            selectedCharacter === char
-                                                ? 'bg-white text-pink-600 shadow-md'
-                                                : 'bg-white/20 hover:bg-white/30 backdrop-blur-sm'
-                                        }`}
-                                    >
-                                        {char} {count}
-                                    </button>
-                                ))}
-                            </div>
+            {/* FOR YOU Card（統合版） */}
+            <section className="p-4 animate-in fade-in duration-500">
+                <div className="rounded-3xl p-6 shadow-lg relative overflow-hidden bg-gradient-to-br from-pink-500 to-rose-500 text-white">
+                    <div className="relative z-10">
+                        {/* 見出し行 */}
+                        <div className="flex items-center justify-between mb-3">
+                            <span className="text-sm font-bold opacity-80 uppercase tracking-wider">FOR YOU（2日以内）</span>
+                            {/* 4件以上の場合のみ合計件数を表示 */}
+                            {basePosts.length >= 4 && (
+                                <span className="text-lg font-bold">{basePosts.length}件</span>
+                            )}
                         </div>
-                        {/* Decorative Background */}
-                        <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
-                    </div>
-                </section>
-            )}
 
-            {/* HIT LIST Card */}
-            {topPosts.length > 0 && (
-                <section className="px-4 pb-4 animate-in fade-in duration-500">
-                    <div className="rounded-3xl p-6 shadow-lg relative overflow-hidden bg-gradient-to-br from-purple-500 to-pink-500 text-white">
-                        <div className="relative z-10">
-                            <div className="flex items-center gap-2 mb-4">
-                                <Newspaper className="w-5 h-5" />
-                                <span className="text-sm font-bold opacity-80 uppercase tracking-wider">HIT LIST</span>
+                        {/* パターンA: 0件 */}
+                        {basePosts.length === 0 && (
+                            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4">
+                                <p className="text-sm font-medium text-center">
+                                    まだヒットがないよ。<br />見つけたら投稿してね
+                                </p>
                             </div>
+                        )}
 
-                            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 space-y-3">
-                                {topPosts.map((post) => (
-                                    <p key={post.id} className="text-sm font-medium leading-snug flex items-start gap-2">
-                                        <span className="mt-1 w-1.5 h-1.5 rounded-full bg-white flex-shrink-0" />
-                                        {formatNewsLine(post)}
-                                    </p>
-                                ))}
-                            </div>
-                        </div>
-                        {/* Decorative Background */}
-                        <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
+                        {/* パターンB: 1-3件（少数） */}
+                        {basePosts.length > 0 && basePosts.length <= 3 && (
+                            <>
+                                {/* ムード文 */}
+                                {moodText && (
+                                    <p className="text-base font-bold mb-3">{moodText}</p>
+                                )}
+
+                                {/* リスト表示 */}
+                                <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 space-y-3">
+                                    {topBasePosts.map((post) => (
+                                        <p key={post.id} className="text-sm font-medium leading-snug flex items-start gap-2">
+                                            <span className="mt-1 w-1.5 h-1.5 rounded-full bg-white flex-shrink-0" />
+                                            {formatNewsLine(post)}
+                                        </p>
+                                    ))}
+                                </div>
+                            </>
+                        )}
+
+                        {/* パターンC: 4件以上（多数） */}
+                        {basePosts.length >= 4 && (
+                            <>
+                                {/* キャラチップ */}
+                                <div className="flex flex-wrap gap-2 mb-4">
+                                    {characterSummary.map(([char, count]) => (
+                                        <button
+                                            key={char}
+                                            onClick={() => setSelectedCharacter(selectedCharacter === char ? null : char)}
+                                            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                                                selectedCharacter === char
+                                                    ? 'bg-white text-pink-600 shadow-md'
+                                                    : 'bg-white/20 hover:bg-white/30 backdrop-blur-sm'
+                                            }`}
+                                        >
+                                            {char} {count}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {/* リスト表示 */}
+                                <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 space-y-3">
+                                    {topBasePosts.map((post) => (
+                                        <p key={post.id} className="text-sm font-medium leading-snug flex items-start gap-2">
+                                            <span className="mt-1 w-1.5 h-1.5 rounded-full bg-white flex-shrink-0" />
+                                            {formatNewsLine(post)}
+                                        </p>
+                                    ))}
+                                </div>
+                            </>
+                        )}
                     </div>
-                </section>
-            )}
+                    {/* Decorative Background */}
+                    <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
+                </div>
+            </section>
 
             {/* Filters */}
             <div className="px-4 py-3 bg-white border-b border-gray-50 flex gap-2 overflow-x-auto">
