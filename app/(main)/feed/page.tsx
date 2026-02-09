@@ -16,8 +16,9 @@ interface UserProfileMap {
 }
 
 export default function FeedPage() {
-    const { posts, user } = useApp();
+    const { posts, user, userProfile } = useApp();
     const [filter, setFilter] = useState<StatusFilter>('all');
+    const [selectedCharacter, setSelectedCharacter] = useState<string | null>(null);
     const [userMap, setUserMap] = useState<UserProfileMap>({});
 
     // 投稿者プロフィールを取得
@@ -69,12 +70,55 @@ export default function FeedPage() {
         fetchUserProfiles();
     }, [posts]);
 
+    // FOR YOU用: 直近48時間 + お気に入りキャラの投稿
+    // NOTE: 将来的に投稿数が増えたらFirestoreクエリ（複合インデックス必要）に変更を検討
+    // query(where('createdAt', '>=', timestamp), where('character', 'in', favorites))
+    const basePosts = useMemo(() => {
+        if (!userProfile?.favorites || userProfile.favorites.length === 0) {
+            return [];
+        }
+
+        const now = new Date();
+        const hours48Ago = new Date(now.getTime() - 48 * 60 * 60 * 1000);
+
+        return posts.filter(post => {
+            if (!post.createdAt) return false;
+            
+            const postDate = post.createdAt.toDate ? post.createdAt.toDate() : new Date(post.createdAt);
+            const is48h = postDate >= hours48Ago;
+            const isFavorite = userProfile.favorites.includes(post.character);
+            
+            return is48h && isFavorite;
+        });
+    }, [posts, userProfile]);
+
+    // キャラ別集計
+    const characterSummary = useMemo(() => {
+        const counts: Record<string, number> = {};
+        basePosts.forEach(post => {
+            counts[post.character] = (counts[post.character] || 0) + 1;
+        });
+        
+        // 件数でソートして上位3つ
+        return Object.entries(counts)
+            .sort(([, a], [, b]) => b - a)
+            .slice(0, 3);
+    }, [basePosts]);
+
     const filteredPosts = useMemo(() => {
-        if (filter === 'all') return posts;
-        // 'seen' フィルタは seen と bought を含む（= soldout以外）
-        if (filter === 'seen') return posts.filter(p => p.status !== 'soldout');
-        return posts.filter(p => p.status === 'soldout');
-    }, [posts, filter]);
+        let result = posts;
+        
+        // ステータスフィルタ
+        if (filter === 'seen') result = result.filter(p => p.status !== 'soldout');
+        if (filter === 'soldout') result = result.filter(p => p.status === 'soldout');
+        
+        // キャラフィルタ（selectedCharacterがある場合）
+        if (selectedCharacter) {
+            result = result.filter(p => p.character === selectedCharacter);
+        }
+        
+        return result;
+    }, [posts, filter, selectedCharacter]);
 
     // いいね数でソートしたトップ3
     const topPosts = useMemo(() => {
@@ -104,14 +148,55 @@ export default function FeedPage() {
 
     return (
         <div className="pb-4">
-            {/* News Card */}
-            {topPosts.length > 0 && (
+            {/* FOR YOU Card */}
+            {basePosts.length > 0 && (
                 <section className="p-4 animate-in fade-in duration-500">
                     <div className="rounded-3xl p-6 shadow-lg relative overflow-hidden bg-gradient-to-br from-pink-500 to-rose-500 text-white">
                         <div className="relative z-10">
+                            <div className="flex items-center gap-2 mb-3">
+                                <span className="text-sm font-bold opacity-80 uppercase tracking-wider">FOR YOU（2日以内）</span>
+                            </div>
+
+                            {/* サマリ行 */}
+                            <p className="text-base font-bold mb-3">
+                                {characterSummary.map(([char, count], idx) => (
+                                    <span key={char}>
+                                        {char} {count}件{idx < characterSummary.length - 1 ? ' / ' : ''}
+                                    </span>
+                                ))}
+                            </p>
+
+                            {/* キャラチップ */}
+                            <div className="flex flex-wrap gap-2">
+                                {characterSummary.map(([char, count]) => (
+                                    <button
+                                        key={char}
+                                        onClick={() => setSelectedCharacter(selectedCharacter === char ? null : char)}
+                                        className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                                            selectedCharacter === char
+                                                ? 'bg-white text-pink-600 shadow-md'
+                                                : 'bg-white/20 hover:bg-white/30 backdrop-blur-sm'
+                                        }`}
+                                    >
+                                        {char} {count}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                        {/* Decorative Background */}
+                        <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
+                    </div>
+                </section>
+            )}
+
+            {/* HIT LIST Card */}
+            {topPosts.length > 0 && (
+                <section className="px-4 pb-4 animate-in fade-in duration-500">
+                    <div className="rounded-3xl p-6 shadow-lg relative overflow-hidden bg-gradient-to-br from-purple-500 to-pink-500 text-white">
+                        <div className="relative z-10">
                             <div className="flex items-center gap-2 mb-4">
                                 <Newspaper className="w-5 h-5" />
-                                <span className="text-sm font-bold opacity-80 uppercase tracking-wider">News</span>
+                                <span className="text-sm font-bold opacity-80 uppercase tracking-wider">HIT LIST</span>
                             </div>
 
                             <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 space-y-3">
