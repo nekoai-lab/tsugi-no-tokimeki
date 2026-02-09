@@ -43,7 +43,8 @@ export interface Post {
     stickerType: string;
     areaMasked: string;
     shopName?: string;
-    postDate?: string; // "2026-02-02T14:30"
+    postDate?: string; // "2026-02-02" (日付のみ)
+    postTime?: string; // "14:00" or "その他" (見つけた時間)
     likes?: string[]; // いいねしたユーザーのUID配列
     createdAt?: Timestamp;
 }

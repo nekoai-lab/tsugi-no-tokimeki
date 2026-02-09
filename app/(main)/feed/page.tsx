@@ -192,9 +192,10 @@ export default function FeedPage() {
                                             const dt = new Date(post.postDate);
                                             const month = dt.getMonth() + 1;
                                             const day = dt.getDate();
-                                            const hours = dt.getHours().toString().padStart(2, '0');
-                                            const minutes = dt.getMinutes().toString().padStart(2, '0');
-                                            return `${month}/${day} ${hours}:${minutes}`;
+                                            // postTimeがあればそれを使用、なければpostDateから時間を抽出
+                                            const timeDisplay = post.postTime || 
+                                                `${dt.getHours().toString().padStart(2, '0')}:${dt.getMinutes().toString().padStart(2, '0')}`;
+                                            return `${month}/${day} ${timeDisplay}`;
                                         })()}
                                     </div>
                                 )}

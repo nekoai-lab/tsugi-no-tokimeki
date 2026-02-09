@@ -5,7 +5,7 @@ import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db, appId } from '@/lib/firebase';
 import { useApp } from '@/contexts/AppContext';
 import { getCanonicalUid } from '@/lib/userService';
-import { CHARACTERS, STICKER_TYPES, POST_SHOPS, PROFILE_AREAS } from '@/lib/utils';
+import { CHARACTERS, STICKER_TYPES, POST_SHOPS, PROFILE_AREAS, POST_TIMES } from '@/lib/utils';
 import { XCircle, RefreshCw, Send } from 'lucide-react';
 import { ButtonSelect } from '@/components/shared/ButtonSelect';
 import { CustomDatePicker } from '@/components/shared/CustomDatePicker';
@@ -21,6 +21,20 @@ function getNowDate(): string {
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 }
 
+/** 現在時刻に近いデフォルト時間を取得 */
+function getDefaultPostTime(): string {
+  const now = new Date();
+  const hour = now.getHours();
+  
+  // 10:00～20:00の範囲内
+  if (hour >= 10 && hour <= 20) {
+    return `${hour.toString().padStart(2, '0')}:00`;
+  }
+  
+  // 範囲外は「その他」
+  return 'その他';
+}
+
 export default function PostModal({ onClose }: PostModalProps) {
   const { user, userProfile } = useApp();
 
@@ -30,6 +44,7 @@ export default function PostModal({ onClose }: PostModalProps) {
   const [station, setStation] = useState(PROFILE_AREAS[0]);
   const [shopName, setShopName] = useState(POST_SHOPS[0]);
   const [postDate, setPostDate] = useState(getNowDate());
+  const [postTime, setPostTime] = useState(getDefaultPostTime());
   const [text, setText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -52,6 +67,7 @@ export default function PostModal({ onClose }: PostModalProps) {
         areaMasked: station || '不明',
         shopName,
         postDate: postDate,
+        postTime: postTime,
         createdAt: serverTimestamp()
       });
 
@@ -133,6 +149,27 @@ export default function PostModal({ onClose }: PostModalProps) {
             value={postDate}
             onChange={setPostDate}
           />
+
+          {/* Time */}
+          <div>
+            <label className="block text-xs font-bold text-gray-500 mb-2">時間</label>
+            <div className="grid grid-cols-4 gap-2">
+              {POST_TIMES.map((time) => (
+                <button
+                  key={time}
+                  type="button"
+                  onClick={() => setPostTime(time)}
+                  className={`py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                    postTime === time
+                      ? 'bg-pink-500 text-white shadow-sm'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {time}
+                </button>
+              ))}
+            </div>
+          </div>
 
           {/* Sticker type */}
           <ButtonSelect
