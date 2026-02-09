@@ -84,7 +84,10 @@ export default function FeedPage() {
         return posts.filter(post => {
             if (!post.createdAt) return false;
             
-            const postDate = post.createdAt.toDate ? post.createdAt.toDate() : new Date(post.createdAt);
+            // Timestamp型の場合はtoDate()を使用
+            const postDate = 'toDate' in post.createdAt && typeof post.createdAt.toDate === 'function'
+                ? post.createdAt.toDate()
+                : new Date(post.createdAt as any);
             const is48h = postDate >= hours48Ago;
             const isFavorite = userProfile.favorites.includes(post.character);
             
