@@ -101,10 +101,12 @@ export interface RouteProposal {
 export interface StickerAlbumPost {
     id: string;
     userId: string;
+    authorUid?: string; // canonicalUid（安定したユーザーID）
     imageUrl: string;
     caption?: string;
     characterName?: string;
     stickerType?: string;
+    likes?: string[]; // お気に入りしたユーザーのUID配列
     createdAt?: Timestamp;
 }
 

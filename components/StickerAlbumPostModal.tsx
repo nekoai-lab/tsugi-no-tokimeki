@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react';
 import { useApp } from '@/contexts/AppContext';
 import { uploadStickerImage, createStickerAlbumPost } from '@/lib/stickerAlbumService';
+import { getCanonicalUid } from '@/lib/userService';
 import { XCircle, Camera, RefreshCw, Send } from 'lucide-react';
 
 interface StickerAlbumPostModalProps {
@@ -10,7 +11,7 @@ interface StickerAlbumPostModalProps {
 }
 
 export default function StickerAlbumPostModal({ onClose }: StickerAlbumPostModalProps) {
-    const { user } = useApp();
+    const { user, userProfile } = useApp();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -35,8 +36,12 @@ export default function StickerAlbumPostModal({ onClose }: StickerAlbumPostModal
         if (!user || !selectedFile) return;
         setIsUploading(true);
         try {
+            // canonicalUid を取得（LIFF経由ならlineUserIdを使用）
+            const lineUserId = userProfile?.lineUserId;
+            const canonicalUid = await getCanonicalUid(user.uid, lineUserId);
+
             const imageUrl = await uploadStickerImage(user.uid, selectedFile);
-            await createStickerAlbumPost(user.uid, imageUrl, caption);
+            await createStickerAlbumPost(user.uid, imageUrl, caption, canonicalUid);
             onClose();
         } catch (error) {
             console.error('Upload error:', error);

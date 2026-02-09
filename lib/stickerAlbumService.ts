@@ -7,6 +7,9 @@ import {
   orderBy,
   onSnapshot,
   serverTimestamp,
+  updateDoc,
+  arrayUnion,
+  arrayRemove,
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage, appId } from './firebase';
@@ -32,12 +35,15 @@ export async function uploadStickerImage(
 export async function createStickerAlbumPost(
   userId: string,
   imageUrl: string,
-  caption?: string
+  caption?: string,
+  authorUid?: string
 ): Promise<string> {
   const docRef = await addDoc(getCollectionRef(), {
     userId,
+    authorUid: authorUid || userId, // canonicalUid（なければuserIdをフォールバック）
     imageUrl,
     caption: caption || '',
+    likes: [],
     createdAt: serverTimestamp(),
   });
   return docRef.id;
@@ -59,4 +65,18 @@ export function subscribeStickerAlbumPosts(
 export async function deleteStickerAlbumPost(postId: string): Promise<void> {
   const postRef = doc(db, 'artifacts', appId, 'public', 'data', 'stickerAlbumPosts', postId);
   await deleteDoc(postRef);
+}
+
+export async function addLikeToStickerPost(postId: string, uid: string): Promise<void> {
+  const postRef = doc(db, 'artifacts', appId, 'public', 'data', 'stickerAlbumPosts', postId);
+  await updateDoc(postRef, {
+    likes: arrayUnion(uid),
+  });
+}
+
+export async function removeLikeFromStickerPost(postId: string, uid: string): Promise<void> {
+  const postRef = doc(db, 'artifacts', appId, 'public', 'data', 'stickerAlbumPosts', postId);
+  await updateDoc(postRef, {
+    likes: arrayRemove(uid),
+  });
 }
