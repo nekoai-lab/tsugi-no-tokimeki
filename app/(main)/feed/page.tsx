@@ -259,85 +259,73 @@ export default function FeedPage() {
                     filteredPosts.map(post => {
                         // 投稿者情報を取得
                         const authorInfo = post.authorUid ? userMap[post.authorUid] : null;
-                        const displayName = authorInfo?.displayName || '不明';
                         const handle = authorInfo?.handle || '';
 
                         return (
-                            <div key={post.id} className="p-4 bg-white hover:bg-gray-50 transition-colors">
-                                <div className="flex justify-between items-start mb-2">
+                            <div key={post.id} className="px-4 py-3 bg-white hover:bg-gray-50 transition-colors">
+                                {/* 1行目: ステータス+キャラ vs @handle */}
+                                <div className="flex justify-between items-center mb-1">
                                     <div className="flex items-center gap-2">
                                         <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border ${post.status === 'soldout' ? 'bg-red-50 border-red-200 text-red-700' :
                                                     'bg-blue-50 border-blue-200 text-blue-700'
                                             }`}>
                                             {post.status === 'soldout' ? '売り切れ' : 'あった'}
                                         </span>
-                                        <span className="text-xs font-medium text-gray-500">{post.character}</span>
+                                        <span className="text-sm font-bold text-gray-800">{post.character}</span>
                                     </div>
-                                    <span className="text-[10px] text-gray-400">{getRelativeTime(post.createdAt)}</span>
-                                </div>
-
-                                <p className="text-sm text-gray-800 mb-2 leading-relaxed">{post.text}</p>
-
-                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-400">
-                                {post.postDate && (
-                                    <div className="flex items-center gap-1">
-                                        {(() => {
-                                            const dt = new Date(post.postDate);
-                                            const month = dt.getMonth() + 1;
-                                            const day = dt.getDate();
-                                            // postTimeがあればそれを使用、なければpostDateから時間を抽出
-                                            const timeDisplay = post.postTime || 
-                                                `${dt.getHours().toString().padStart(2, '0')}:${dt.getMinutes().toString().padStart(2, '0')}`;
-                                            return `${month}/${day} ${timeDisplay}`;
-                                        })()}
-                                    </div>
-                                )}
-                                <div className="flex items-center gap-1">
-                                    <MapPin className="w-3 h-3" />
-                                    {post.areaMasked || 'エリア不明'}
-                                </div>
-                                {post.shopName && (
-                                    <div className="flex items-center gap-1">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
-                                        {post.shopName}
-                                    </div>
-                                )}
-                                <div className="flex items-center gap-1">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
-                                    {post.stickerType}
-                                </div>
-
-                                {/* Like Button */}
-                                <button
-                                    onClick={() => handleToggleLike(post)}
-                                    className="flex items-center gap-1 ml-auto"
-                                >
-                                    <Heart
-                                        className={`w-4 h-4 transition-colors ${
-                                            user && post.likes?.includes(user.uid)
-                                                ? 'fill-pink-500 text-pink-500'
-                                                : 'text-gray-300 hover:text-pink-300'
-                                        }`}
-                                    />
-                                    {(post.likes?.length || 0) > 0 && (
-                                        <span className={`text-xs ${
-                                            user && post.likes?.includes(user.uid) ? 'text-pink-500' : 'text-gray-400'
-                                        }`}>
-                                            {post.likes?.length}
-                                        </span>
-                                    )}
-                                </button>
-                            </div>
-
-                            {/* 投稿者情報（小さく表示） */}
-                            {post.authorUid && (
-                                <div className="mt-1 text-xs text-gray-400">
-                                    <span className="font-medium">{displayName}</span>
                                     {handle && (
-                                        <span className="ml-2">{handle}</span>
+                                        <span className="text-xs text-gray-400">{handle}</span>
                                     )}
                                 </div>
-                            )}
+
+                                {/* 2行目: メタ情報 vs 相対時刻 */}
+                                <div className="flex justify-between items-center gap-2">
+                                    <div className="flex items-center gap-2 text-xs text-gray-500 min-w-0 flex-1">
+                                        <div className="flex items-center gap-1 flex-shrink-0">
+                                            <MapPin className="w-3 h-3" />
+                                            <span>{post.areaMasked || '不明'}</span>
+                                        </div>
+                                        {post.shopName && (
+                                            <>
+                                                <span className="text-gray-300">/</span>
+                                                <span className="truncate">{post.shopName}</span>
+                                            </>
+                                        )}
+                                        <span className="text-gray-300">/</span>
+                                        <span className="truncate">{post.stickerType}</span>
+                                        {post.text && (
+                                            <>
+                                                <span className="text-gray-300">・</span>
+                                                <span className="truncate">{post.text}</span>
+                                            </>
+                                        )}
+                                    </div>
+                                    <div className="flex items-center gap-3 flex-shrink-0">
+                                        <span className="text-[10px] text-gray-400 whitespace-nowrap">
+                                            {getRelativeTime(post.createdAt)}
+                                        </span>
+                                        {/* Like Button */}
+                                        <button
+                                            onClick={() => handleToggleLike(post)}
+                                            className="flex items-center gap-1"
+                                        >
+                                            <Heart
+                                                className={`w-3.5 h-3.5 transition-colors ${
+                                                    user && post.likes?.includes(user.uid)
+                                                        ? 'fill-pink-500 text-pink-500'
+                                                        : 'text-gray-300 hover:text-pink-300'
+                                                }`}
+                                            />
+                                            {(post.likes?.length || 0) > 0 && (
+                                                <span className={`text-[10px] ${
+                                                    user && post.likes?.includes(user.uid) ? 'text-pink-500' : 'text-gray-400'
+                                                }`}>
+                                                    {post.likes?.length}
+                                                </span>
+                                            )}
+                                        </button>
+                                    </div>
+                                </div>
                         </div>
                     );
                     })
