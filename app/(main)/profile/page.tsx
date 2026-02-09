@@ -6,6 +6,7 @@ import { useApp } from '@/contexts/AppContext';
 import { Bell, ChevronRight, Edit2, User, CheckCircle, XCircle } from 'lucide-react';
 import ProfileIconEditModal from '@/components/ProfileIconEditModal';
 import ProfileNameEditModal from '@/components/ProfileNameEditModal';
+import { updateProfile } from '@/lib/profileService';
 
 export default function ProfilePage() {
     const router = useRouter();
@@ -13,7 +14,6 @@ export default function ProfilePage() {
     const [showIconModal, setShowIconModal] = useState(false);
     const [showNameModal, setShowNameModal] = useState(false);
 
-    // ダミーデータ（後で実装する際の想定）
     const displayName = userProfile?.displayName || '未設定';
     const photoUrl = userProfile?.photoUrl || '';
     const handle = userProfile?.handle || '@未設定';
@@ -21,26 +21,27 @@ export default function ProfilePage() {
     const notificationsEnabled = userProfile?.notificationsEnabled ?? (userProfile?.notificationPreferences?.enabled && !!userProfile?.lineUserId);
     const lineLinked = !!userProfile?.lineUserId;
 
-    // 既存アイコンのダミーデータ
-    const existingIcons = [
-        'https://via.placeholder.com/100/FFB6C1/FFFFFF?text=1',
-        'https://via.placeholder.com/100/FFC0CB/FFFFFF?text=2',
-        'https://via.placeholder.com/100/FFD9E3/FFFFFF?text=3',
-        'https://via.placeholder.com/100/E6E6FA/FFFFFF?text=4',
-        'https://via.placeholder.com/100/DDA0DD/FFFFFF?text=5',
-        'https://via.placeholder.com/100/EE82EE/FFFFFF?text=6',
-        'https://via.placeholder.com/100/DA70D6/FFFFFF?text=7',
-        'https://via.placeholder.com/100/BA55D3/FFFFFF?text=8',
-    ];
-
-    const handleIconSave = (newPhotoUrl: string) => {
-        // TODO: 実際の保存処理を実装
-        console.log('Save icon:', newPhotoUrl);
+    const handleIconSave = async (newPhotoUrl: string) => {
+        if (!user) return;
+        try {
+            await updateProfile(user.uid, { photoUrl: newPhotoUrl });
+        } catch (error) {
+            console.error('Failed to save icon:', error);
+            alert('アイコンの保存に失敗しました');
+        }
     };
 
-    const handleNameSave = (newDisplayName: string, newHandle: string) => {
-        // TODO: 実際の保存処理を実装（重複チェック含む）
-        console.log('Save name:', { displayName: newDisplayName, handle: newHandle });
+    const handleNameSave = async (newDisplayName: string, newHandle: string) => {
+        if (!user) return;
+        try {
+            await updateProfile(user.uid, {
+                displayName: newDisplayName,
+                handle: newHandle,
+            });
+        } catch (error) {
+            console.error('Failed to save name:', error);
+            alert('名前の保存に失敗しました');
+        }
     };
 
     return (
@@ -154,7 +155,6 @@ export default function ProfilePage() {
                 onClose={() => setShowIconModal(false)}
                 onSave={handleIconSave}
                 currentPhotoUrl={photoUrl}
-                existingIcons={existingIcons}
             />
 
             <ProfileNameEditModal
