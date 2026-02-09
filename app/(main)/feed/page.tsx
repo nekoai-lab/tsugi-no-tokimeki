@@ -161,16 +161,6 @@ export default function FeedPage() {
 
                         return (
                             <div key={post.id} className="p-4 bg-white hover:bg-gray-50 transition-colors">
-                                {/* 投稿者情報 */}
-                                {post.authorUid && (
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <span className="text-sm font-bold text-gray-800">{displayName}</span>
-                                        {handle && (
-                                            <span className="text-xs text-gray-500">{handle}</span>
-                                        )}
-                                    </div>
-                                )}
-
                                 <div className="flex justify-between items-start mb-2">
                                     <div className="flex items-center gap-2">
                                         <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border ${post.status === 'soldout' ? 'bg-red-50 border-red-200 text-red-700' :
@@ -235,6 +225,16 @@ export default function FeedPage() {
                                     )}
                                 </button>
                             </div>
+
+                            {/* 投稿者情報（小さく表示） */}
+                            {post.authorUid && (
+                                <div className="mt-1 text-xs text-gray-400">
+                                    <span className="font-medium">{displayName}</span>
+                                    {handle && (
+                                        <span className="ml-2">{handle}</span>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     );
                     })

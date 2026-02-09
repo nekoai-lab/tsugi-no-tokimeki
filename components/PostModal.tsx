@@ -56,10 +56,10 @@ export default function PostModal({ onClose }: PostModalProps) {
       const lineUserId = userProfile?.lineUserId;
       const canonicalUid = await getCanonicalUid(user.uid, lineUserId);
 
-      await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'posts'), {
+      // 投稿データを作成
+      const postData: any = {
         uid: user.uid, // 旧フィールド（後方互換性）
         authorUid: canonicalUid, // 安定したユーザーID
-        authorLineUserId: lineUserId || undefined, // バックフィル用（任意）
         text: text || '',
         status,
         character,
@@ -69,7 +69,14 @@ export default function PostModal({ onClose }: PostModalProps) {
         postDate: postDate,
         postTime: postTime,
         createdAt: serverTimestamp()
-      });
+      };
+
+      // lineUserIdがある場合のみ追加（undefinedを避ける）
+      if (lineUserId) {
+        postData.authorLineUserId = lineUserId;
+      }
+
+      await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'posts'), postData);
 
       // Fire-and-forget: 通知APIを非同期で呼ぶ（UIはブロックしない）
       fetch('/api/notify-post', {
