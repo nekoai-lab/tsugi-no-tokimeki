@@ -71,3 +71,4 @@ if (typeof window !== 'undefined' && shouldUseEmulator() && !emulatorsConnected)
   console.log('📡 Using production Firebase (non-localhost access detected)');
 }
 
+

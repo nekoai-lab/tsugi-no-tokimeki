@@ -131,3 +131,13 @@ select {
 .onboarding-bg {
   background-image: linear-gradient(119deg, rgba(251, 213, 251, 1) 14%, rgba(149, 233, 243, 1));
 }
+
+/* 横スクロールのスクロールバーを非表示 */
+.scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

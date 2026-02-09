@@ -201,8 +201,8 @@ tsugi-no-tokimeki/
 │   │   │   └── page.tsx      # For You画面 (/home)
 │   │   ├── feed/
 │   │   │   └── page.tsx      # Feed画面 (/feed)
-│   │   ├── calendar/
-│   │   │   └── page.tsx      # Calendar画面 (/calendar)
+│   │   ├── sticker-book/
+│   │   │   └── page.tsx      # シール帳画面 (/sticker-book)
 │   │   ├── profile/
 │   │   │   └── page.tsx      # Profile画面 (/profile)
 │   │   ├── notification-settings/

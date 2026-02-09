@@ -6,10 +6,13 @@ import { useApp } from '@/contexts/AppContext';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db, appId } from '@/lib/firebase';
 import { getRouteProposalByDate, saveRouteProposal } from '@/lib/routeProposalService';
+import { subscribeStickerAlbumPosts } from '@/lib/stickerAlbumService';
 import { PROFILE_AREAS, PROFILE_CHARACTERS, POST_SHOPS, STICKER_TYPES } from '@/lib/utils';
 import { Route, ChevronRight, Clock, Loader2 } from 'lucide-react';
 import ProfileEditModal from '@/components/ProfileEditModal';
 import TimeEditModal from '@/components/TimeEditModal';
+import StickerPostHorizontalList from '@/components/StickerPostHorizontalList';
+import type { StickerAlbumPost } from '@/lib/types';
 
 function formatDisplayList(items: string[], max = 3): string {
     if (!items || items.length === 0) return '未設定';
@@ -27,6 +30,7 @@ export default function HomePage() {
     const [editingTime, setEditingTime] = useState(false);
     const [generating, setGenerating] = useState(false);
     const [todayRouteId, setTodayRouteId] = useState<string | null>(null);
+    const [stickerPosts, setStickerPosts] = useState<StickerAlbumPost[]>([]);
     const generationStarted = useRef(false);
 
     const currentAreas = (() => {
@@ -120,6 +124,15 @@ export default function HomePage() {
         generateIfNeeded();
     }, [user, userProfile, posts]);
 
+    // シール帳の最新投稿を取得
+    useEffect(() => {
+        const unsubscribe = subscribeStickerAlbumPosts((posts) => {
+            // 最新10件のみ表示
+            setStickerPosts(posts.slice(0, 10));
+        });
+        return () => unsubscribe();
+    }, []);
+
     const handleSaveAreas = async (selected: string[]) => {
         if (!user) return;
         const profileRef = doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'main');
@@ -179,6 +192,11 @@ export default function HomePage() {
 
     return (
         <div className="p-4 space-y-6">
+            {/* シール帳の最新投稿 */}
+            <section>
+                <StickerPostHorizontalList posts={stickerPosts} />
+            </section>
+
             {/* Route Proposal Button */}
             <section>
                 <button
@@ -341,3 +359,4 @@ export default function HomePage() {
         </div>
     );
 }
+

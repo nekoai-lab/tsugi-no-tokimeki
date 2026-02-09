@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db, appId } from '@/lib/firebase';
 import { useApp } from '@/contexts/AppContext';
-import { STICKER_TYPES, DEFAULT_POST_CHARACTERS, POST_SHOPS, PROFILE_AREAS } from '@/lib/utils';
+import { CHARACTERS, STICKER_TYPES, POST_SHOPS, PROFILE_AREAS } from '@/lib/utils';
 import { XCircle, RefreshCw, Send } from 'lucide-react';
 import { ButtonSelect } from '@/components/shared/ButtonSelect';
 import { CustomDatePicker } from '@/components/shared/CustomDatePicker';
@@ -21,66 +21,12 @@ function getNowDate(): string {
 }
 
 export default function PostModal({ onClose }: PostModalProps) {
-  const { user, userProfile } = useApp();
-
-  // キャラクター候補: プロフィールのお気に入り + カスタム。なければデフォルトを表示
-  const characterOptions = useMemo(() => {
-    const profileChars = userProfile?.favorites || [];
-    const customChars = userProfile?.customCharacters || [];
-    const seen = new Set<string>();
-    const result: string[] = [];
-    for (const c of [...profileChars, ...customChars]) {
-      if (!seen.has(c)) { seen.add(c); result.push(c); }
-    }
-    // プロフィールに何もない場合はデフォルトを表示
-    return result.length > 0 ? result : DEFAULT_POST_CHARACTERS;
-  }, [userProfile?.favorites, userProfile?.customCharacters]);
-
-  // 駅（エリア）候補: プロフィールのエリア + カスタム。なければデフォルトを表示
-  const stationOptions = useMemo(() => {
-    const profileAreas = userProfile?.areas && userProfile.areas.length > 0
-      ? userProfile.areas
-      : (userProfile?.area ? [userProfile.area] : []);
-    const customAreas = userProfile?.customAreas || [];
-    const seen = new Set<string>();
-    const result: string[] = [];
-    for (const a of [...profileAreas, ...customAreas]) {
-      if (!seen.has(a)) { seen.add(a); result.push(a); }
-    }
-    // プロフィールに何もない場合はデフォルトを表示
-    return result.length > 0 ? result : PROFILE_AREAS;
-  }, [userProfile?.areas, userProfile?.area, userProfile?.customAreas]);
-
-  // 店名候補: プロフィールの店名 + カスタム。なければデフォルトを表示
-  const shopOptions = useMemo(() => {
-    const profileShops = userProfile?.preferredShops || [];
-    const customShops = userProfile?.customShops || [];
-    const seen = new Set<string>();
-    const result: string[] = [];
-    for (const s of [...profileShops, ...customShops]) {
-      if (!seen.has(s)) { seen.add(s); result.push(s); }
-    }
-    // プロフィールに何もない場合はデフォルトを表示
-    return result.length > 0 ? result : POST_SHOPS;
-  }, [userProfile?.preferredShops, userProfile?.customShops]);
-
-  // シールの種類候補: プロフィールのシールの種類 + カスタム。なければデフォルトを表示
-  const stickerTypeOptions = useMemo(() => {
-    const profileTypes = userProfile?.preferredStickerTypes || [];
-    const customTypes = userProfile?.customStickerTypes || [];
-    const seen = new Set<string>();
-    const result: string[] = [];
-    for (const t of [...profileTypes, ...customTypes]) {
-      if (!seen.has(t)) { seen.add(t); result.push(t); }
-    }
-    // プロフィールに何もない場合はデフォルトを表示
-    return result.length > 0 ? result : STICKER_TYPES;
-  }, [userProfile?.preferredStickerTypes, userProfile?.customStickerTypes]);
+  const { user } = useApp();
 
   const [status, setStatus] = useState<'seen' | 'soldout'>('seen');
-  const [character, setCharacter] = useState(characterOptions[0]);
+  const [character, setCharacter] = useState(CHARACTERS[0]);
   const [stickerType, setStickerType] = useState(STICKER_TYPES[0]);
-  const [station, setStation] = useState(stationOptions[0]);
+  const [station, setStation] = useState(PROFILE_AREAS[0]);
   const [shopName, setShopName] = useState(POST_SHOPS[0]);
   const [postDate, setPostDate] = useState(getNowDate());
   const [text, setText] = useState('');
@@ -163,7 +109,7 @@ export default function PostModal({ onClose }: PostModalProps) {
             label="場所（駅）"
             value={station}
             onChange={setStation}
-            options={stationOptions}
+            options={PROFILE_AREAS}
           />
 
           {/* Shop */}
@@ -171,7 +117,7 @@ export default function PostModal({ onClose }: PostModalProps) {
             label="店名"
             value={shopName}
             onChange={setShopName}
-            options={shopOptions}
+            options={POST_SHOPS}
           />
 
           {/* Date */}
@@ -186,7 +132,7 @@ export default function PostModal({ onClose }: PostModalProps) {
             label="シールの種類"
             value={stickerType}
             onChange={setStickerType}
-            options={stickerTypeOptions}
+            options={STICKER_TYPES}
           />
 
           {/* Character */}
@@ -194,7 +140,7 @@ export default function PostModal({ onClose }: PostModalProps) {
             label="キャラクター"
             value={character}
             onChange={setCharacter}
-            options={characterOptions}
+            options={CHARACTERS}
           />
 
           {/* Detail text */}
@@ -231,3 +177,4 @@ export default function PostModal({ onClose }: PostModalProps) {
     </div>
   );
 }
+

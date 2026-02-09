@@ -115,25 +115,16 @@ export default function NotificationSettingsPage() {
                     </button>
                 </div>
 
-                {/* LINE Warning */}
-                <div className={`flex items-start gap-2 p-3 rounded-xl ${hasLineUserId ? 'bg-gray-50' : 'bg-pink-50 border border-pink-200'}`}>
-                    <Info className={`w-4 h-4 mt-0.5 flex-shrink-0 ${hasLineUserId ? 'text-gray-400' : 'text-pink-500'}`} />
-                    <p className={`text-xs ${hasLineUserId ? 'text-gray-500' : 'text-pink-600 font-medium'}`}>
-                        LINE連携していない方は通知が届きません。プロフィールからLINE連携してください。
-                    </p>
-                </div>
-
                 {/* Area Selection - 2択 */}
                 <div className={enabled ? '' : 'opacity-40 pointer-events-none'}>
                     <p className="font-bold text-sm text-gray-700 mb-2">通知を受け取るエリア</p>
                     <div className="space-y-2">
                         <button
                             onClick={() => setAreaMode('profile')}
-                            className={`w-full p-4 rounded-xl text-left transition-colors border-2 ${
-                                areaMode === 'profile'
-                                    ? 'border-pink-500 bg-pink-50'
-                                    : 'border-gray-200 bg-white hover:bg-gray-50'
-                            }`}
+                            className={`w-full p-4 rounded-xl text-left transition-colors border-2 ${areaMode === 'profile'
+                                ? 'border-pink-500 bg-pink-50'
+                                : 'border-gray-200 bg-white hover:bg-gray-50'
+                                }`}
                         >
                             <p className={`font-bold text-sm ${areaMode === 'profile' ? 'text-pink-600' : 'text-gray-800'}`}>
                                 現在設定しているエリアのみ
@@ -144,11 +135,10 @@ export default function NotificationSettingsPage() {
                         </button>
                         <button
                             onClick={() => setAreaMode('all_tokyo')}
-                            className={`w-full p-4 rounded-xl text-left transition-colors border-2 ${
-                                areaMode === 'all_tokyo'
-                                    ? 'border-pink-500 bg-pink-50'
-                                    : 'border-gray-200 bg-white hover:bg-gray-50'
-                            }`}
+                            className={`w-full p-4 rounded-xl text-left transition-colors border-2 ${areaMode === 'all_tokyo'
+                                ? 'border-pink-500 bg-pink-50'
+                                : 'border-gray-200 bg-white hover:bg-gray-50'
+                                }`}
                         >
                             <p className={`font-bold text-sm ${areaMode === 'all_tokyo' ? 'text-pink-600' : 'text-gray-800'}`}>
                                 東京全域
@@ -168,16 +158,14 @@ export default function NotificationSettingsPage() {
                             <button
                                 key={slot.key}
                                 onClick={() => toggleTimeSlot(slot.key)}
-                                className={`py-3 px-4 rounded-xl text-sm font-medium transition-colors ${
-                                    selectedTimeSlots.includes(slot.key)
-                                        ? 'bg-pink-500 text-white'
-                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                }`}
+                                className={`py-3 px-4 rounded-xl text-sm font-medium transition-colors ${selectedTimeSlots.includes(slot.key)
+                                    ? 'bg-pink-500 text-white'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                    }`}
                             >
                                 <span className="block font-bold">{slot.label}</span>
-                                <span className={`block text-xs mt-0.5 ${
-                                    selectedTimeSlots.includes(slot.key) ? 'text-pink-100' : 'text-gray-400'
-                                }`}>{slot.range}</span>
+                                <span className={`block text-xs mt-0.5 ${selectedTimeSlots.includes(slot.key) ? 'text-pink-100' : 'text-gray-400'
+                                    }`}>{slot.range}</span>
                             </button>
                         ))}
                     </div>

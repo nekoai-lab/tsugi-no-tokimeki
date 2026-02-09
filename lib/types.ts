@@ -24,6 +24,12 @@ export interface UserProfile {
     lineUserId?: string;
     notificationPreferences?: NotificationPreferences;
     updatedAt?: Timestamp;
+    // プロフィール情報（新規追加）
+    displayName?: string; // 表示名（例：あや）
+    photoUrl?: string; // アイコン画像URL
+    handle?: string; // ハンドルネーム（例：@youjougaw_ws1）
+    supportId?: string; // ユーザーID（サポート用、固定）
+    notificationsEnabled?: boolean; // LINE通知ON/OFF
 }
 
 export interface Post {
@@ -94,6 +100,8 @@ export interface StickerAlbumPost {
     userId: string;
     imageUrl: string;
     caption?: string;
+    characterName?: string;
+    stickerType?: string;
     createdAt?: Timestamp;
 }
 

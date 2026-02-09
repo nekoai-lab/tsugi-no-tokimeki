@@ -22,3 +22,4 @@ export default function NavButton({ href, icon: Icon, label }: NavButtonProps) {
   );
 }
 
+
