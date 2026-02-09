@@ -117,6 +117,24 @@ export default function FeedPage() {
             result = result.filter(p => p.character === selectedCharacter);
         }
         
+        // 日時順にソート（新しい順）
+        result = [...result].sort((a, b) => {
+            // postDate + postTime の組み合わせで比較
+            const getDateTime = (post: Post) => {
+                if (!post.postDate) return 0;
+                
+                const dateStr = post.postDate;
+                const timeStr = post.postTime || '00:00';
+                
+                // "その他"は00:00として扱う
+                const time = timeStr === 'その他' ? '00:00' : timeStr;
+                
+                return new Date(`${dateStr}T${time}`).getTime();
+            };
+            
+            return getDateTime(b) - getDateTime(a); // 降順（新しい順）
+        });
+        
         return result;
     }, [posts, filter, selectedCharacter]);
 
