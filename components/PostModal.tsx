@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db, appId } from '@/lib/firebase';
 import { useApp } from '@/contexts/AppContext';
+import { getCanonicalUid } from '@/lib/userService';
 import { CHARACTERS, STICKER_TYPES, POST_SHOPS, PROFILE_AREAS } from '@/lib/utils';
 import { XCircle, RefreshCw, Send } from 'lucide-react';
 import { ButtonSelect } from '@/components/shared/ButtonSelect';
@@ -21,7 +22,7 @@ function getNowDate(): string {
 }
 
 export default function PostModal({ onClose }: PostModalProps) {
-  const { user } = useApp();
+  const { user, userProfile } = useApp();
 
   const [status, setStatus] = useState<'seen' | 'soldout'>('seen');
   const [character, setCharacter] = useState(CHARACTERS[0]);
@@ -36,8 +37,14 @@ export default function PostModal({ onClose }: PostModalProps) {
     if (!user) return;
     setIsSubmitting(true);
     try {
+      // canonicalUid を取得（LIFF経由ならlineUserIdを使用）
+      const lineUserId = userProfile?.lineUserId;
+      const canonicalUid = await getCanonicalUid(user.uid, lineUserId);
+
       await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'posts'), {
-        uid: user.uid,
+        uid: user.uid, // 旧フィールド（後方互換性）
+        authorUid: canonicalUid, // 安定したユーザーID
+        authorLineUserId: lineUserId || undefined, // バックフィル用（任意）
         text: text || '',
         status,
         character,
@@ -59,7 +66,7 @@ export default function PostModal({ onClose }: PostModalProps) {
           shopName,
           status,
           postDate,
-          posterUid: user.uid,
+          posterUid: canonicalUid, // canonicalUidを使用
         }),
       }).catch(err => console.error('Notification error:', err));
 

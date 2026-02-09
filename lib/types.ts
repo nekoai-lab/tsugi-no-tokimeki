@@ -34,7 +34,9 @@ export interface UserProfile {
 
 export interface Post {
     id: string;
-    uid: string;
+    uid: string; // 旧フィールド（後方互換性のため残す）
+    authorUid?: string; // canonicalUid（安定したユーザーID）
+    authorLineUserId?: string; // バックフィル用（任意）
     text: string;
     status: 'seen' | 'bought' | 'soldout';
     character: string;

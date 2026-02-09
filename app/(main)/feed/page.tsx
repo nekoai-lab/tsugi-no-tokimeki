@@ -1,17 +1,73 @@
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { doc, getDoc } from 'firebase/firestore';
+import { db, appId } from '@/lib/firebase';
 import { useApp } from '@/contexts/AppContext';
 import { getRelativeTime } from '@/lib/utils';
 import { addLike, removeLike } from '@/lib/postService';
 import { Heart, MapPin, Newspaper } from 'lucide-react';
-import type { Post } from '@/lib/types';
+import type { Post, UserProfile } from '@/lib/types';
 
 type StatusFilter = 'all' | 'seen' | 'soldout';
+
+interface UserProfileMap {
+    [uid: string]: { displayName: string; handle: string };
+}
 
 export default function FeedPage() {
     const { posts, user } = useApp();
     const [filter, setFilter] = useState<StatusFilter>('all');
+    const [userMap, setUserMap] = useState<UserProfileMap>({});
+
+    // 投稿者プロフィールを取得
+    useEffect(() => {
+        const fetchUserProfiles = async () => {
+            // authorUidを持つ投稿からユニークなuidを抽出
+            const authorUids = [...new Set(
+                posts
+                    .filter(p => p.authorUid)
+                    .map(p => p.authorUid!)
+            )];
+
+            if (authorUids.length === 0) return;
+
+            // 並列取得
+            const profilePromises = authorUids.map(async (uid) => {
+                try {
+                    const profileRef = doc(db, 'artifacts', appId, 'users', uid, 'profile', 'main');
+                    const profileSnap = await getDoc(profileRef);
+                    
+                    if (profileSnap.exists()) {
+                        const data = profileSnap.data() as UserProfile;
+                        return {
+                            uid,
+                            displayName: data.displayName || '名無しさん',
+                            handle: data.handle || '',
+                        };
+                    }
+                } catch (error) {
+                    console.error(`Failed to fetch profile for ${uid}:`, error);
+                }
+                return { uid, displayName: '名無しさん', handle: '' };
+            });
+
+            const profiles = await Promise.all(profilePromises);
+            
+            // userMapを作成
+            const newUserMap: UserProfileMap = {};
+            profiles.forEach(profile => {
+                newUserMap[profile.uid] = {
+                    displayName: profile.displayName,
+                    handle: profile.handle,
+                };
+            });
+            
+            setUserMap(newUserMap);
+        };
+
+        fetchUserProfiles();
+    }, [posts]);
 
     const filteredPosts = useMemo(() => {
         if (filter === 'all') return posts;
@@ -97,21 +153,37 @@ export default function FeedPage() {
                         まだ投稿がありません。<br />最初の情報をシェアしよう！
                     </div>
                 ) : (
-                    filteredPosts.map(post => (
-                        <div key={post.id} className="p-4 bg-white hover:bg-gray-50 transition-colors">
-                            <div className="flex justify-between items-start mb-2">
-                                <div className="flex items-center gap-2">
-                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border ${post.status === 'soldout' ? 'bg-red-50 border-red-200 text-red-700' :
-                                                'bg-blue-50 border-blue-200 text-blue-700'
-                                        }`}>
-                                        {post.status === 'soldout' ? '売り切れ' : 'あった'}
-                                    </span>
-                                    <span className="text-xs font-medium text-gray-500">{post.character}</span>
-                                </div>
-                                <span className="text-[10px] text-gray-400">{getRelativeTime(post.createdAt)}</span>
-                            </div>
+                    filteredPosts.map(post => {
+                        // 投稿者情報を取得
+                        const authorInfo = post.authorUid ? userMap[post.authorUid] : null;
+                        const displayName = authorInfo?.displayName || '不明';
+                        const handle = authorInfo?.handle || '';
 
-                            <p className="text-sm text-gray-800 mb-2 leading-relaxed">{post.text}</p>
+                        return (
+                            <div key={post.id} className="p-4 bg-white hover:bg-gray-50 transition-colors">
+                                {/* 投稿者情報 */}
+                                {post.authorUid && (
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <span className="text-sm font-bold text-gray-800">{displayName}</span>
+                                        {handle && (
+                                            <span className="text-xs text-gray-500">{handle}</span>
+                                        )}
+                                    </div>
+                                )}
+
+                                <div className="flex justify-between items-start mb-2">
+                                    <div className="flex items-center gap-2">
+                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border ${post.status === 'soldout' ? 'bg-red-50 border-red-200 text-red-700' :
+                                                    'bg-blue-50 border-blue-200 text-blue-700'
+                                            }`}>
+                                            {post.status === 'soldout' ? '売り切れ' : 'あった'}
+                                        </span>
+                                        <span className="text-xs font-medium text-gray-500">{post.character}</span>
+                                    </div>
+                                    <span className="text-[10px] text-gray-400">{getRelativeTime(post.createdAt)}</span>
+                                </div>
+
+                                <p className="text-sm text-gray-800 mb-2 leading-relaxed">{post.text}</p>
 
                             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-400">
                                 {post.postDate && (
@@ -163,7 +235,8 @@ export default function FeedPage() {
                                 </button>
                             </div>
                         </div>
-                    ))
+                    );
+                    })
                 )}
             </div>
         </div>
