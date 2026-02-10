@@ -4,9 +4,10 @@ import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useApp } from '@/contexts/AppContext';
 import { subscribeStickerAlbumPosts, deleteStickerAlbumPost, addLikeToStickerPost, removeLikeFromStickerPost } from '@/lib/stickerAlbumService';
+import { getUserProfile } from '@/lib/userService';
 import { MoreVertical, Trash2, Heart } from 'lucide-react';
 import ImageViewer from '@/components/ImageViewer';
-import type { StickerAlbumPost } from '@/lib/types';
+import type { StickerAlbumPost, UserProfile } from '@/lib/types';
 
 function StickerCard({ 
     post, 
@@ -15,7 +16,8 @@ function StickerCard({
     onToggleLike,
     isOwner, 
     isHighlighted,
-    isLiked
+    isLiked,
+    userProfile
 }: {
     post: StickerAlbumPost;
     onTap: () => void;
@@ -24,8 +26,14 @@ function StickerCard({
     isOwner: boolean;
     isHighlighted?: boolean;
     isLiked: boolean;
+    userProfile?: UserProfile | null;
 }) {
     const [loaded, setLoaded] = useState(false);
+
+    const displayName = userProfile?.displayName || '名無しさん';
+    const handle = userProfile?.handle;
+    // キャプションは最初の10文字だけ表示
+    const shortCaption = post.caption ? (post.caption.length > 10 ? post.caption.slice(0, 10) + '…' : post.caption) : null;
 
     return (
         <div
@@ -43,10 +51,21 @@ function StickerCard({
                 />
             </div>
 
-            {/* 右上: ♡ボタン */}
+            {/* 下部グラデーション + 投稿者情報 + キャプション（インスタ風） */}
+            <div className="absolute bottom-0 left-0 right-12 bg-gradient-to-t from-black/70 via-black/30 to-transparent pt-8 pb-2 px-2">
+                <p className="text-white text-xs font-bold drop-shadow-md truncate">
+                    {displayName}
+                    {handle && <span className="font-normal text-white/70 ml-1">@{handle}</span>}
+                </p>
+                {shortCaption && (
+                    <p className="text-white/80 text-[10px] drop-shadow-md truncate mt-0.5">{shortCaption}</p>
+                )}
+            </div>
+
+            {/* 右下: ♡ボタン（インスタ風） */}
             <button
                 onClick={onToggleLike}
-                className="absolute top-2 right-2 w-9 h-9 flex items-center justify-center rounded-full bg-black/20 backdrop-blur-sm drop-shadow-md active:scale-95 transition-transform"
+                className="absolute bottom-2 right-2 w-10 h-10 flex items-center justify-center rounded-full bg-black/30 backdrop-blur-sm drop-shadow-md active:scale-95 transition-transform"
             >
                 <Heart
                     className={`w-5 h-5 ${isLiked ? 'fill-pink-500 text-pink-500' : 'text-white'}`}
@@ -73,6 +92,7 @@ export default function StickerAlbumPage() {
     const [selectedPost, setSelectedPost] = useState<StickerAlbumPost | null>(null);
     const [menuPostId, setMenuPostId] = useState<string | null>(null);
     const [highlightedPostId, setHighlightedPostId] = useState<string | null>(null);
+    const [userMap, setUserMap] = useState<Record<string, UserProfile>>({});
     const menuRef = useRef<HTMLDivElement>(null);
     const postRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
@@ -82,6 +102,24 @@ export default function StickerAlbumPage() {
         });
         return () => unsubscribe();
     }, []);
+
+    // 投稿者情報を取得
+    useEffect(() => {
+        const authorUids = Array.from(new Set(posts.map(p => p.authorUid).filter(Boolean))) as string[];
+        if (authorUids.length === 0) return;
+
+        Promise.all(authorUids.map(uid => getUserProfile(uid)))
+            .then(profiles => {
+                const map: Record<string, UserProfile> = {};
+                profiles.forEach((profile, idx) => {
+                    if (profile) {
+                        map[authorUids[idx]] = profile;
+                    }
+                });
+                setUserMap(map);
+            })
+            .catch(err => console.error('Failed to fetch user profiles:', err));
+    }, [posts]);
 
     // postIdクエリパラメータから該当投稿をハイライト
     useEffect(() => {
@@ -160,6 +198,7 @@ export default function StickerAlbumPage() {
                     <div className="grid grid-cols-2 gap-2">
                         {posts.map((post) => {
                             const isLiked = post.likes?.includes(user?.uid || '') || false;
+                            const authorProfile = post.authorUid ? userMap[post.authorUid] : null;
 
                             return (
                                 <div
@@ -178,6 +217,7 @@ export default function StickerAlbumPage() {
                                         isOwner={user?.uid === post.userId}
                                         isHighlighted={highlightedPostId === post.id}
                                         isLiked={isLiked}
+                                        userProfile={authorProfile}
                                     />
                                     {/* 削除メニュー */}
                                     {menuPostId === post.id && (
