@@ -149,14 +149,14 @@ export default function StickerAlbumPage() {
     };
 
     return (
-        <div className="h-full flex flex-col">
+        <div className="min-h-full">
             {posts.length === 0 ? (
-                <div className="flex-1 flex flex-col items-center justify-center py-12">
+                <div className="flex flex-col items-center justify-center py-20">
                     <p className="text-gray-500 text-sm">まだ写真がありません</p>
                     <p className="text-gray-400 text-xs mt-1">右下の＋ボタンから投稿しよう</p>
                 </div>
             ) : (
-                <div className="flex-1 overflow-y-auto p-2 scrollable">
+                <div className="p-2">
                     <div className="grid grid-cols-2 gap-2">
                         {posts.map((post) => {
                             const isLiked = post.likes?.includes(user?.uid || '') || false;
