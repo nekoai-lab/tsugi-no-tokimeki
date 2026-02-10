@@ -6,7 +6,7 @@ import { useApp } from '@/contexts/AppContext';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db, appId } from '@/lib/firebase';
 import { CHARACTERS, AREAS, STICKER_TYPES, PREFERRED_SHOPS } from '@/lib/utils';
-import { Sparkles, MessageCircle, ExternalLink, Share2, CalendarDays, Bell, Clock } from 'lucide-react';
+import { Sparkles, MessageCircle, ExternalLink, Share2, CalendarDays, Bell, Clock, BookOpen } from 'lucide-react';
 import type { UserProfile } from '@/lib/types';
 import { initializeLiff, getLineProfile, isLineLoggedIn } from '@/lib/liff';
 
@@ -423,14 +423,14 @@ function OnboardingContent() {
                                 </p>
                             </div>
 
-                            {/* スライド3: LINE通知 */}
+                            {/* スライド3: シール帳 */}
                             <div className="slider-slide flex flex-col items-center justify-center text-center px-4">
                                 <div className="bg-green-100 p-6 rounded-full mb-6">
-                                    <Bell className="w-12 h-12 text-green-500" />
+                                    <BookOpen className="w-12 h-12 text-green-500" />
                                 </div>
                                 <p className="text-base text-gray-700 leading-relaxed">
-                                    LINE連携で、みんなが見つけてくれた<br />
-                                    情報の通知が届きます。
+                                    みんなのシール帳を見ることができるよ<br />
+                                    ぜひ参考にしてみてね
                                 </p>
                             </div>
                         </div>

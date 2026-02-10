@@ -11,7 +11,7 @@ interface TimeEditModalProps {
     initialEndTime: string;
 }
 
-const HOURS = Array.from({ length: 18 }, (_, i) => i + 5); // 5:00 ~ 22:00
+const HOURS = Array.from({ length: 11 }, (_, i) => i + 10); // 10:00 ~ 20:00
 
 export default function TimeEditModal({
     isOpen,
@@ -51,21 +51,21 @@ export default function TimeEditModal({
     };
 
     return (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-            <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl animate-in slide-in-from-bottom-5 duration-300 max-h-[80vh] flex flex-col">
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="bg-white w-full max-w-md rounded-t-2xl sm:rounded-2xl shadow-2xl animate-in slide-in-from-bottom-10 duration-300 max-h-[90vh] flex flex-col">
                 {/* Header */}
-                <div className="flex justify-between items-center p-5 border-b border-gray-100">
+                <div className="flex justify-between items-center p-4 border-b border-gray-100 flex-shrink-0">
                     <h3 className="font-bold text-lg">指定時間を設定</h3>
                     <button
                         onClick={onClose}
                         className="p-1 hover:bg-gray-100 rounded-full transition-colors"
                     >
-                        <X className="w-5 h-5 text-gray-400" />
+                        <X className="w-6 h-6 text-gray-400" />
                     </button>
                 </div>
 
                 {/* Time Pickers */}
-                <div className="p-5 space-y-6">
+                <div className="flex-1 overflow-y-auto p-4 space-y-6">
                     {/* Start Time */}
                     <div>
                         <label className="text-sm font-bold text-gray-700 mb-2 block flex items-center gap-1">
@@ -76,11 +76,10 @@ export default function TimeEditModal({
                                 <button
                                     key={h}
                                     onClick={() => setStartHour(h)}
-                                    className={`py-2 rounded-lg text-sm font-medium transition-all ${
-                                        startHour === h
+                                    className={`py-2 rounded-lg text-sm font-medium transition-all ${startHour === h
                                             ? 'bg-pink-500 text-white'
                                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                    }`}
+                                        }`}
                                 >
                                     {h}:00
                                 </button>
@@ -98,13 +97,12 @@ export default function TimeEditModal({
                                 <button
                                     key={h}
                                     onClick={() => setEndHour(h)}
-                                    className={`py-2 rounded-lg text-sm font-medium transition-all ${
-                                        endHour === h
+                                    className={`py-2 rounded-lg text-sm font-medium transition-all ${endHour === h
                                             ? 'bg-pink-500 text-white'
                                             : h <= startHour
                                                 ? 'bg-gray-50 text-gray-300 cursor-not-allowed'
                                                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                    }`}
+                                        }`}
                                     disabled={h <= startHour}
                                 >
                                     {h}:00
@@ -119,7 +117,7 @@ export default function TimeEditModal({
                 </div>
 
                 {/* Footer */}
-                <div className="p-5 border-t border-gray-100 flex gap-3">
+                <div className="p-4 border-t border-gray-100 flex gap-3 flex-shrink-0">
                     <button
                         onClick={onClose}
                         className="flex-1 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors"
