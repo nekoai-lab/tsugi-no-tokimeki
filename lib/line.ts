@@ -270,3 +270,232 @@ export function createTextMessage(text: string): LineMessage {
   };
 }
 
+/**
+ * 朝の統合通知メッセージを作成（ルート＋目撃情報）
+ */
+export function createMorningNotificationMessage(
+  userName: string,
+  route: {
+    areas: string[];
+    shops: Array<{ name: string; time: string }>;
+    totalTravelTime: number;
+  } | null,
+  recentPosts: Array<{
+    character: string;
+    area: string;
+    shopName: string;
+    status: string;
+    timeAgo: string;
+  }>
+): FlexMessage {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://tsugi-no-tokimeki-265901745615.asia-northeast1.run.app";
+
+  // ルート情報のテキスト
+  const routeText = route && route.shops.length > 0
+    ? route.shops.map(s => `${s.time} ${s.name}`).join(' → ')
+    : 'まだルートがありません';
+
+  // 目撃情報のテキスト
+  const postsContents: FlexComponent[] = recentPosts.length > 0
+    ? recentPosts.slice(0, 3).map(post => ({
+        type: "text" as const,
+        text: `• ${post.character} @${post.shopName}（${post.timeAgo}）`,
+        size: "sm" as const,
+        color: post.status === 'seen' ? "#333333" : "#9CA3AF",
+        wrap: true,
+        margin: "sm" as const,
+      }))
+    : [{
+        type: "text" as const,
+        text: "直近の目撃情報はありません",
+        size: "sm" as const,
+        color: "#9CA3AF",
+        margin: "sm" as const,
+      }];
+
+  return {
+    type: "flex",
+    altText: `🌅 おはよう！今日のシール情報`,
+    contents: {
+      type: "bubble",
+      body: {
+        type: "box",
+        layout: "vertical",
+        contents: [
+          {
+            type: "text",
+            text: `🌅 おはよう、${userName}さん！`,
+            size: "lg",
+            weight: "bold",
+            color: "#EC4899",
+          },
+          {
+            type: "text",
+            text: "今日のシール情報をお届け",
+            size: "sm",
+            color: "#666666",
+            margin: "sm",
+          },
+          {
+            type: "separator",
+            margin: "lg",
+          },
+          // 今日のルート
+          {
+            type: "text",
+            text: "🗺️ 今日のおすすめルート",
+            size: "md",
+            weight: "bold",
+            color: "#333333",
+            margin: "lg",
+          },
+          {
+            type: "text",
+            text: route?.areas?.join('・') || 'エリア未設定',
+            size: "sm",
+            color: "#06C755",
+            margin: "sm",
+          },
+          {
+            type: "text",
+            text: routeText,
+            size: "sm",
+            color: "#666666",
+            wrap: true,
+            margin: "sm",
+          },
+          {
+            type: "separator",
+            margin: "lg",
+          },
+          // 目撃情報
+          {
+            type: "text",
+            text: "📍 直近の目撃情報",
+            size: "md",
+            weight: "bold",
+            color: "#333333",
+            margin: "lg",
+          },
+          {
+            type: "box",
+            layout: "vertical",
+            margin: "sm",
+            contents: postsContents,
+          },
+        ],
+      },
+      footer: {
+        type: "box",
+        layout: "vertical",
+        contents: [
+          {
+            type: "button",
+            action: {
+              type: "uri",
+              label: "詳しく見る",
+              uri: appUrl,
+            },
+            style: "primary",
+            color: "#EC4899",
+          },
+        ],
+      },
+    },
+  };
+}
+
+/**
+ * 夕方のまとめ通知メッセージを作成
+ */
+export function createEveningNotificationMessage(
+  userName: string,
+  todayPosts: Array<{
+    character: string;
+    area: string;
+    shopName: string;
+    status: string;
+  }>
+): FlexMessage {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://tsugi-no-tokimeki-265901745615.asia-northeast1.run.app";
+
+  const postsContents: FlexComponent[] = todayPosts.length > 0
+    ? todayPosts.slice(0, 5).map(post => ({
+        type: "text" as const,
+        text: `• ${post.character} @${post.area}/${post.shopName}`,
+        size: "sm" as const,
+        color: post.status === 'seen' ? "#333333" : "#9CA3AF",
+        wrap: true,
+        margin: "sm" as const,
+      }))
+    : [{
+        type: "text" as const,
+        text: "今日は目撃情報がありませんでした",
+        size: "sm" as const,
+        color: "#9CA3AF",
+        margin: "sm" as const,
+      }];
+
+  return {
+    type: "flex",
+    altText: `🌆 今日のシール情報まとめ`,
+    contents: {
+      type: "bubble",
+      body: {
+        type: "box",
+        layout: "vertical",
+        contents: [
+          {
+            type: "text",
+            text: `🌆 ${userName}さん、お疲れさま！`,
+            size: "lg",
+            weight: "bold",
+            color: "#8B5CF6",
+          },
+          {
+            type: "text",
+            text: "今日の目撃情報まとめ",
+            size: "sm",
+            color: "#666666",
+            margin: "sm",
+          },
+          {
+            type: "separator",
+            margin: "lg",
+          },
+          {
+            type: "text",
+            text: `📊 今日の投稿: ${todayPosts.length}件`,
+            size: "md",
+            weight: "bold",
+            color: "#333333",
+            margin: "lg",
+          },
+          {
+            type: "box",
+            layout: "vertical",
+            margin: "md",
+            contents: postsContents,
+          },
+        ],
+      },
+      footer: {
+        type: "box",
+        layout: "vertical",
+        contents: [
+          {
+            type: "button",
+            action: {
+              type: "uri",
+              label: "もっと見る",
+              uri: appUrl,
+            },
+            style: "primary",
+            color: "#8B5CF6",
+          },
+        ],
+      },
+    },
+  };
+}
+

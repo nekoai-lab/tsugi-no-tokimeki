@@ -1,11 +1,16 @@
 import { Timestamp } from 'firebase/firestore';
 
+// 旧形式（後方互換性のため残す）
 export type TimeSlotKey = 'morning' | 'afternoon' | 'evening' | 'night';
 
 export interface NotificationPreferences {
     enabled: boolean;
     areas: string[];
-    timeSlots: TimeSlotKey[];
+    // 新形式: 朝8時・夕方18時のトグル
+    morningNotification?: boolean;  // 朝8時（ルート＋目撃情報）
+    eveningNotification?: boolean;  // 夕方18時（まとめ）
+    // 旧形式（後方互換性のため残す）
+    timeSlots?: TimeSlotKey[];
 }
 
 export interface UserProfile {

@@ -30,10 +30,17 @@ export const TIME_SLOTS = [
 ];
 export const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'];
 
+// 旧形式（後方互換性のため残す）
 export const NOTIFICATION_TIME_SLOTS = [
   { key: 'morning' as const, label: '朝', range: '6:00〜11:00' },
   { key: 'afternoon' as const, label: '昼', range: '11:00〜15:00' },
   { key: 'evening' as const, label: '夕方', range: '15:00〜19:00' },
   { key: 'night' as const, label: '夜', range: '19:00〜24:00' },
 ];
+
+// 新形式: シンプルな2つの通知タイミング
+export const NOTIFICATION_TIMES = {
+  morning: { time: '8:00', label: '朝の通知', description: '今日のルート＋目撃情報' },
+  evening: { time: '18:00', label: '夕方の通知', description: '今日の目撃情報まとめ' },
+};
 

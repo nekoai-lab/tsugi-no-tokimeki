@@ -56,7 +56,7 @@ function StickerCard({
             <div className="absolute bottom-0 left-0 right-12 bg-gradient-to-t from-black/70 via-black/30 to-transparent pt-8 pb-2 px-2">
                 <p className="text-white text-xs font-bold drop-shadow-md truncate">
                     {displayName}
-                    {handle && <span className="font-normal text-white/70 ml-1">@{handle}</span>}
+                    {handle && <span className="font-normal text-white/70 ml-1">@{handle.replace(/^@/, '')}</span>}
                 </p>
                 {shortCaption && (
                     <p className="text-white/80 text-[10px] drop-shadow-md truncate mt-0.5">{shortCaption}</p>

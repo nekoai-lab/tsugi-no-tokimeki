@@ -35,10 +35,12 @@ export default function ProfileNameEditModal({
 
     const validateHandle = (value: string): boolean => {
         // ハンドルネームのバリデーション
-        // @で始まり、英数字とアンダースコアのみ、3-20文字
-        const handleRegex = /^@[a-zA-Z0-9_]{3,20}$/;
-        if (!handleRegex.test(value)) {
-            setHandleError('@で始まり、英数字とアンダースコアのみ、3-20文字で入力してください');
+        // @は不要、英数字とアンダースコアのみ、3-20文字
+        // 先頭の@は自動で除去される
+        const cleanValue = value.startsWith('@') ? value.slice(1) : value;
+        const handleRegex = /^[a-zA-Z0-9_]{3,20}$/;
+        if (!handleRegex.test(cleanValue)) {
+            setHandleError('英数字とアンダースコアのみ、3-20文字で入力してください');
             return false;
         }
         setHandleError('');
@@ -72,7 +74,9 @@ export default function ProfileNameEditModal({
         setSaving(true);
         try {
             // TODO: 重複チェックなどの実際の処理を実装
-            await onSave(displayName.trim(), handle.trim());
+            // @が付いていたら除去して保存
+            const cleanHandle = handle.trim().startsWith('@') ? handle.trim().slice(1) : handle.trim();
+            await onSave(displayName.trim(), cleanHandle);
             onClose();
         } catch (error) {
             console.error('Save error:', error);
@@ -123,8 +127,8 @@ export default function ProfileNameEditModal({
                             type="text"
                             value={handle}
                             onChange={(e) => handleHandleChange(e.target.value)}
-                            placeholder="例：@youjougaw_ws1"
-                            maxLength={21}
+                            placeholder="例：youjougaw_ws1"
+                            maxLength={20}
                             className={`w-full px-4 py-3 bg-gray-50 border rounded-xl text-sm focus:outline-none focus:ring-2 transition-all ${
                                 handleError
                                     ? 'border-red-300 focus:ring-red-500/20 focus:border-red-500'

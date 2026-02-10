@@ -16,7 +16,9 @@ export default function ProfilePage() {
 
     const displayName = userProfile?.displayName || '未設定';
     const photoUrl = userProfile?.photoUrl || '';
-    const handle = userProfile?.handle || '@未設定';
+    const handle = userProfile?.handle || '未設定';
+    // 表示用（@付き）
+    const displayHandle = handle === '未設定' ? '@未設定' : `@${handle.replace(/^@/, '')}`;
     const supportId = userProfile?.supportId || user?.uid?.slice(0, 8) || '未設定';
     const notificationsEnabled = userProfile?.notificationsEnabled ?? (userProfile?.notificationPreferences?.enabled && !!userProfile?.lineUserId);
     const lineLinked = !!userProfile?.lineUserId;
@@ -86,7 +88,7 @@ export default function ProfilePage() {
                                 {displayName}
                             </p>
                             <p className="text-xs text-gray-500">
-                                {handle}
+                                {displayHandle}
                             </p>
                         </div>
                         <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
@@ -162,7 +164,7 @@ export default function ProfilePage() {
                 onClose={() => setShowNameModal(false)}
                 onSave={handleNameSave}
                 currentDisplayName={displayName}
-                currentHandle={handle}
+                currentHandle={handle.replace(/^@/, '')}
             />
         </div>
     );
