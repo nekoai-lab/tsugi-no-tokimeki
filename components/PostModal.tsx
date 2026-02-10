@@ -5,7 +5,7 @@ import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db, appId } from '@/lib/firebase';
 import { useApp } from '@/contexts/AppContext';
 import { getCanonicalUid } from '@/lib/userService';
-import { CHARACTERS, STICKER_TYPES, POST_SHOPS, PROFILE_AREAS, POST_TIMES } from '@/lib/utils';
+import { CHARACTERS, STICKER_TYPES, POST_TIMES, PREFERRED_SHOPS, AREAS } from '@/lib/utils';
 import { XCircle, RefreshCw, Send } from 'lucide-react';
 import { ButtonSelect } from '@/components/shared/ButtonSelect';
 import { CustomDatePicker } from '@/components/shared/CustomDatePicker';
@@ -25,12 +25,12 @@ function getNowDate(): string {
 function getDefaultPostTime(): string {
   const now = new Date();
   const hour = now.getHours();
-  
+
   // 10:00～20:00の範囲内
   if (hour >= 10 && hour <= 20) {
     return `${hour.toString().padStart(2, '0')}:00`;
   }
-  
+
   // 範囲外は「その他」
   return 'その他';
 }
@@ -41,8 +41,8 @@ export default function PostModal({ onClose }: PostModalProps) {
   const [status, setStatus] = useState<'seen' | 'soldout'>('seen');
   const [character, setCharacter] = useState(CHARACTERS[0]);
   const [stickerType, setStickerType] = useState(STICKER_TYPES[0]);
-  const [station, setStation] = useState(PROFILE_AREAS[0]);
-  const [shopName, setShopName] = useState(POST_SHOPS[0]);
+  const [station, setStation] = useState(AREAS[0]);
+  const [shopName, setShopName] = useState(PREFERRED_SHOPS[0]);
   const [postDate, setPostDate] = useState(getNowDate());
   const [postTime, setPostTime] = useState(getDefaultPostTime());
   const [text, setText] = useState('');
@@ -123,11 +123,10 @@ export default function PostModal({ onClose }: PostModalProps) {
               <button
                 key={s.id}
                 onClick={() => setStatus(s.id)}
-                className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${
-                  status === s.id
-                    ? 'bg-white text-pink-600 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
+                className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${status === s.id
+                  ? 'bg-white text-pink-600 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+                  }`}
               >
                 {s.label}
               </button>
@@ -139,7 +138,7 @@ export default function PostModal({ onClose }: PostModalProps) {
             label="場所（駅）"
             value={station}
             onChange={setStation}
-            options={PROFILE_AREAS}
+            options={AREAS}
           />
 
           {/* Shop */}
@@ -147,7 +146,7 @@ export default function PostModal({ onClose }: PostModalProps) {
             label="店名"
             value={shopName}
             onChange={setShopName}
-            options={POST_SHOPS}
+            options={PREFERRED_SHOPS}
           />
 
           {/* Date */}
@@ -166,11 +165,10 @@ export default function PostModal({ onClose }: PostModalProps) {
                   key={time}
                   type="button"
                   onClick={() => setPostTime(time)}
-                  className={`py-2 px-3 rounded-lg text-sm font-medium transition-all ${
-                    postTime === time
-                      ? 'bg-pink-500 text-white shadow-sm'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
+                  className={`py-2 px-3 rounded-lg text-sm font-medium transition-all ${postTime === time
+                    ? 'bg-pink-500 text-white shadow-sm'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
                 >
                   {time}
                 </button>

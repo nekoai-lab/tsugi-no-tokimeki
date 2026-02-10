@@ -7,7 +7,7 @@ import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db, appId } from '@/lib/firebase';
 import { getRouteProposalByDate, saveRouteProposal } from '@/lib/routeProposalService';
 import { subscribeStickerAlbumPosts } from '@/lib/stickerAlbumService';
-import { PROFILE_AREAS, PROFILE_CHARACTERS, POST_SHOPS, STICKER_TYPES } from '@/lib/utils';
+import { STICKER_TYPES, CHARACTERS, PREFERRED_SHOPS, AREAS } from '@/lib/utils';
 import { Route, ChevronRight, Clock, Loader2 } from 'lucide-react';
 import ProfileEditModal from '@/components/ProfileEditModal';
 import TimeEditModal from '@/components/TimeEditModal';
@@ -322,7 +322,7 @@ export default function HomePage() {
                 onClose={() => setEditingArea(false)}
                 onSave={handleSaveAreas}
                 title="エリアを選択"
-                options={PROFILE_AREAS}
+                options={AREAS}
                 initialSelected={currentAreas}
             />
             <ProfileEditModal
@@ -330,7 +330,7 @@ export default function HomePage() {
                 onClose={() => setEditingCharacter(false)}
                 onSave={handleSaveCharacters}
                 title="お気に入りキャラを選択"
-                options={PROFILE_CHARACTERS}
+                options={CHARACTERS}
                 initialSelected={currentCharacters}
             />
             <ProfileEditModal
@@ -338,7 +338,7 @@ export default function HomePage() {
                 onClose={() => setEditingShops(false)}
                 onSave={handleSaveShops}
                 title="よく行くお店を選択"
-                options={POST_SHOPS}
+                options={PREFERRED_SHOPS}
                 initialSelected={currentShops}
             />
             <ProfileEditModal
