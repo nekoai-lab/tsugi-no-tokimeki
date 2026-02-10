@@ -90,7 +90,7 @@ function StickerCard({
 }
 
 export default function StickerAlbumPage() {
-    const { user } = useApp();
+    const { user, setIsModalOpen } = useApp();
     const searchParams = useSearchParams();
     const [posts, setPosts] = useState<StickerAlbumPost[]>([]);
     const [selectedPost, setSelectedPost] = useState<StickerAlbumPost | null>(null);
@@ -133,6 +133,7 @@ export default function StickerAlbumPage() {
             if (targetPost) {
                 setHighlightedPostId(postId);
                 setSelectedPost(targetPost);
+                setIsModalOpen(true);
 
                 // 該当投稿までスクロール
                 setTimeout(() => {
@@ -212,7 +213,10 @@ export default function StickerAlbumPage() {
                                 >
                                     <StickerCard
                                         post={post}
-                                        onTap={() => setSelectedPost(post)}
+                                        onTap={() => {
+                                            setSelectedPost(post);
+                                            setIsModalOpen(true);
+                                        }}
                                         onMenuTap={(e) => {
                                             e.stopPropagation();
                                             setMenuPostId(menuPostId === post.id ? null : post.id);
@@ -255,7 +259,10 @@ export default function StickerAlbumPage() {
                     <ImageViewer
                         imageUrl={selectedPost.imageUrl}
                         caption={selectedPost.caption}
-                        onClose={() => setSelectedPost(null)}
+                        onClose={() => {
+                            setSelectedPost(null);
+                            setIsModalOpen(false);
+                        }}
                         userProfile={selectedProfile}
                         likesCount={selectedLikesCount}
                         isLiked={selectedIsLiked}

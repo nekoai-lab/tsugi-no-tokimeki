@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useApp } from '@/contexts/AppContext';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db, appId } from '@/lib/firebase';
-import { CHARACTERS, AREAS, POST_SHOPS, STICKER_TYPES } from '@/lib/utils';
+import { CHARACTERS, AREAS, STICKER_TYPES, PREFERRED_SHOPS } from '@/lib/utils';
 import { Sparkles, MessageCircle, ExternalLink, Share2, CalendarDays, Bell, Clock } from 'lucide-react';
 import type { UserProfile } from '@/lib/types';
 import { initializeLiff, getLineProfile, isLineLoggedIn } from '@/lib/liff';
@@ -566,7 +566,7 @@ function OnboardingContent() {
                         <h2 className="text-lg font-bold mb-4 text-center">よく行く店は？</h2>
                         <p className="text-xs text-center text-gray-400 mb-4">複数選択できます</p>
                         <div className="grid grid-cols-2 gap-3 mb-6">
-                            {POST_SHOPS.map(shop => (
+                            {PREFERRED_SHOPS.map(shop => (
                                 <button
                                     key={shop}
                                     onClick={() => toggleShop(shop)}
@@ -608,11 +608,10 @@ function OnboardingContent() {
                                         <button
                                             key={`start-${time}`}
                                             onClick={() => setProfile(prev => ({ ...prev, startTime: time }))}
-                                            className={`p-2 rounded-xl text-sm font-medium border-2 transition-all ${
-                                                profile.startTime === time
-                                                    ? 'border-pink-500 bg-pink-50 text-pink-700'
-                                                    : 'border-transparent bg-gray-100 text-gray-600'
-                                            }`}
+                                            className={`p-2 rounded-xl text-sm font-medium border-2 transition-all ${profile.startTime === time
+                                                ? 'border-pink-500 bg-pink-50 text-pink-700'
+                                                : 'border-transparent bg-gray-100 text-gray-600'
+                                                }`}
                                         >
                                             {time}
                                         </button>
@@ -627,11 +626,10 @@ function OnboardingContent() {
                                         <button
                                             key={`end-${time}`}
                                             onClick={() => setProfile(prev => ({ ...prev, endTime: time }))}
-                                            className={`p-2 rounded-xl text-sm font-medium border-2 transition-all ${
-                                                profile.endTime === time
-                                                    ? 'border-pink-500 bg-pink-50 text-pink-700'
-                                                    : 'border-transparent bg-gray-100 text-gray-600'
-                                            }`}
+                                            className={`p-2 rounded-xl text-sm font-medium border-2 transition-all ${profile.endTime === time
+                                                ? 'border-pink-500 bg-pink-50 text-pink-700'
+                                                : 'border-transparent bg-gray-100 text-gray-600'
+                                                }`}
                                         >
                                             {time}
                                         </button>
@@ -687,7 +685,7 @@ function OnboardingContent() {
                         </p>
 
                         {lineUserId ? (
-                            <div className="text-center mb-6">
+                            <div className="text-center mb-4">
                                 <div className="bg-green-50 p-4 rounded-xl">
                                     <p className="text-green-600 font-medium">
                                         ✓ LINE連携が完了しています
@@ -695,7 +693,7 @@ function OnboardingContent() {
                                 </div>
                             </div>
                         ) : (
-                            <div className="space-y-4 mb-6">
+                            <div className="space-y-4 mb-4">
                                 <button
                                     onClick={openLineFriendAdd}
                                     className="w-full bg-[#06C755] hover:bg-[#05b34c] text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors"
@@ -704,30 +702,11 @@ function OnboardingContent() {
                                     LINE友達追加する
                                     <ExternalLink className="w-4 h-4" />
                                 </button>
-                                <p className="text-xs text-center text-gray-400">
-                                    別ウィンドウでLINEが開きます。<br />
-                                    友達追加後、こちらに戻ってきてください。
-                                </p>
                             </div>
                         )}
-
-                        <div className="flex gap-3">
-                            <button onClick={() => setStep(10)} className="flex-1 py-3 text-gray-500 font-medium">戻る</button>{/* Step11,12は自動遷移なのでスキップ */}
-                            <button
-                                onClick={handleLineFriendAdded}
-                                className={`flex-1 py-3 rounded-xl font-bold transition-colors ${
-                                    lineUserId
-                                        ? 'bg-gray-800 text-white'
-                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                }`}
-                            >
-                                {lineUserId ? '次へ' : '友達追加したので次へ'}
-                            </button>
-                        </div>
-
                         <button
                             onClick={() => setStep(CONFIRM_STEP)}
-                            className="w-full py-2 mt-2 text-gray-400 text-sm"
+                            className="w-full py-2 text-gray-400 text-sm"
                         >
                             あとで設定する（スキップ）
                         </button>
