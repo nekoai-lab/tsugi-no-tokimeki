@@ -43,7 +43,7 @@ body {
 /* LIFFブラウザでのsafe-area二重適用を解消 */
 .is-liff html,
 .is-liff body {
-  padding-bottom: 0;
+  padding-bottom: 0 !important;
 }
 
 /* iOS: input要素のfont-sizeが16px未満だとズームが発生するため16px以上を強制 */
