@@ -17,97 +17,63 @@ export default function ImageViewer({
     imageUrl, 
     caption, 
     onClose,
-    userProfile,
     likesCount = 0,
     isLiked = false,
     onToggleLike
 }: ImageViewerProps) {
-    const displayName = userProfile?.displayName || '名無しさん';
-    const handle = userProfile?.handle;
-
     return (
         <div
-            className="fixed inset-0 z-50 flex flex-col overflow-hidden"
+            className="fixed inset-0 z-50 bg-black"
             onClick={onClose}
         >
-            {/* 背景: 画像ブラー */}
-            <div className="absolute inset-0 overflow-hidden">
-                <img
-                    src={imageUrl}
-                    alt=""
-                    className="w-full h-full object-cover scale-110"
-                    style={{ filter: 'blur(30px)' }}
-                />
-                {/* 暗くするオーバーレイ */}
-                <div className="absolute inset-0 bg-black/50" />
-            </div>
-
-            {/* ノイズ/キラ粒オーバーレイ（世界観演出） */}
-            <div 
-                className="absolute inset-0 opacity-[0.03] pointer-events-none"
-                style={{
-                    backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
-                }}
+            {/* 写真：フルスクリーン（主役） */}
+            <img
+                src={imageUrl}
+                alt={caption || ''}
+                className="w-full h-full object-contain"
+                onClick={(e) => e.stopPropagation()}
             />
+
+            {/* 上部グラデーション（閉じるボタン用） */}
+            <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-black/40 to-transparent pointer-events-none" />
 
             {/* 閉じるボタン */}
             <button
                 onClick={onClose}
-                className="absolute top-4 right-4 p-2.5 rounded-full bg-black/30 backdrop-blur-sm text-white/90 hover:text-white hover:bg-black/50 z-20 transition-all"
+                className="absolute top-4 right-4 p-2 text-white/70 hover:text-white z-20 transition-colors"
             >
-                <X className="w-5 h-5" />
+                <X className="w-6 h-6 drop-shadow-lg" />
             </button>
 
-            {/* メイン画像（中央配置、角丸、影付き） */}
-            <div className="flex-1 flex items-center justify-center p-6 relative z-10">
-                <img
-                    src={imageUrl}
-                    alt={caption || ''}
-                    className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl"
-                    style={{ maxHeight: 'calc(100vh - 200px)' }}
-                    onClick={(e) => e.stopPropagation()}
-                />
-            </div>
-
-            {/* 下部グラデーション + 情報シート */}
-            <div 
-                className="absolute bottom-0 left-0 right-0 z-10"
-                onClick={(e) => e.stopPropagation()}
-            >
-                {/* グラデーション背景（高さ40%） */}
-                <div className="bg-gradient-to-t from-black/90 via-black/60 to-transparent pt-16 pb-8 px-5">
-                    {/* 投稿者名 + ハンドル */}
-                    <div className="mb-2">
-                        <p className="text-white font-bold text-lg drop-shadow-lg">{displayName}</p>
-                        {handle && (
-                            <p className="text-white/70 text-sm drop-shadow-md">@{handle}</p>
-                        )}
-                    </div>
-
-                    {/* コメント（2行まで） */}
-                    {caption && (
-                        <p className="text-white/90 text-sm leading-relaxed line-clamp-2 drop-shadow-md mt-2">
-                            {caption}
-                        </p>
-                    )}
+            {/* 下部グラデーション（キャプション用） */}
+            {caption && (
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent pt-12 pb-6 px-5 pointer-events-none">
+                    <p className="text-white text-base leading-relaxed line-clamp-1 drop-shadow-lg">
+                        {caption}
+                    </p>
                 </div>
-            </div>
+            )}
 
-            {/* 右下: ファボボタン（ピル型、浮いてる感じ） */}
+            {/* 右下: ♡ボタン（写真の一部として、控えめに） */}
             {onToggleLike && (
                 <button
                     onClick={(e) => {
                         e.stopPropagation();
                         onToggleLike();
                     }}
-                    className="absolute bottom-24 right-5 z-20 flex items-center gap-2 px-4 py-2.5 rounded-full bg-white/15 backdrop-blur-md border border-white/20 shadow-lg active:scale-95 transition-all hover:bg-white/25"
+                    className="absolute bottom-6 right-5 z-20 p-2.5 rounded-full bg-black/20 backdrop-blur-sm active:scale-90 transition-transform"
                 >
                     <Heart
-                        className={`w-5 h-5 transition-all ${isLiked ? 'fill-pink-500 text-pink-500 scale-110' : 'text-white'}`}
+                        className={`w-6 h-6 drop-shadow-lg ${isLiked ? 'fill-pink-500 text-pink-500' : 'text-white/80'}`}
                     />
-                    <span className="text-white text-sm font-bold">{likesCount}</span>
+                    {likesCount > 0 && (
+                        <span className="absolute -bottom-1 -right-1 text-white text-[10px] font-bold bg-black/40 rounded-full px-1.5 py-0.5 min-w-[18px] text-center">
+                            {likesCount}
+                        </span>
+                    )}
                 </button>
             )}
         </div>
     );
 }
+
