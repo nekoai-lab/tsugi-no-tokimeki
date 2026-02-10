@@ -242,13 +242,30 @@ export default function StickerAlbumPage() {
             )}
 
             {/* フルスクリーン表示 */}
-            {selectedPost && (
-                <ImageViewer
-                    imageUrl={selectedPost.imageUrl}
-                    caption={selectedPost.caption}
-                    onClose={() => setSelectedPost(null)}
-                />
-            )}
+            {selectedPost && (() => {
+                const selectedProfile = selectedPost.authorUid ? userMap[selectedPost.authorUid] : null;
+                const selectedIsLiked = selectedPost.likes?.includes(user?.uid || '') || false;
+                const selectedLikesCount = selectedPost.likes?.length || 0;
+
+                return (
+                    <ImageViewer
+                        imageUrl={selectedPost.imageUrl}
+                        caption={selectedPost.caption}
+                        onClose={() => setSelectedPost(null)}
+                        userProfile={selectedProfile}
+                        likesCount={selectedLikesCount}
+                        isLiked={selectedIsLiked}
+                        onToggleLike={() => {
+                            if (!user) return;
+                            if (selectedIsLiked) {
+                                removeLikeFromStickerPost(selectedPost.id, user.uid);
+                            } else {
+                                addLikeToStickerPost(selectedPost.id, user.uid);
+                            }
+                        }}
+                    />
+                );
+            })()}
         </div>
     );
 }
