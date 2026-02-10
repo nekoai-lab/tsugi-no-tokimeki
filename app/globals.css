@@ -40,6 +40,12 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 
+/* LIFFブラウザでのsafe-area二重適用を解消 */
+.is-liff html,
+.is-liff body {
+  padding-bottom: 0;
+}
+
 /* iOS: input要素のfont-sizeが16px未満だとズームが発生するため16px以上を強制 */
 input,
 textarea,
@@ -55,13 +61,16 @@ select {
   .pb-safe {
     padding-bottom: max(1rem, env(safe-area-inset-bottom));
   }
+
   .pt-safe {
     padding-top: max(0.5rem, env(safe-area-inset-top));
   }
+
   .px-safe {
     padding-left: max(0px, env(safe-area-inset-left));
     padding-right: max(0px, env(safe-area-inset-right));
   }
+
   .mb-safe {
     margin-bottom: max(0px, env(safe-area-inset-bottom));
   }
@@ -80,6 +89,7 @@ select {
     opacity: 0;
     transform: translateY(30px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
