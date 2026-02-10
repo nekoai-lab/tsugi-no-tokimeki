@@ -3,16 +3,18 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useApp } from '@/contexts/AppContext';
-import { Bell, ChevronRight, Edit2, User, CheckCircle, XCircle } from 'lucide-react';
+import { Bell, ChevronRight, Edit2, User, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import ProfileIconEditModal from '@/components/ProfileIconEditModal';
 import ProfileNameEditModal from '@/components/ProfileNameEditModal';
 import { updateProfile } from '@/lib/profileService';
+import { initializeLiff, loginWithLine, getLineProfile, isLineLoggedIn } from '@/lib/liff';
 
 export default function ProfilePage() {
     const router = useRouter();
     const { user, userProfile, signOut } = useApp();
     const [showIconModal, setShowIconModal] = useState(false);
     const [showNameModal, setShowNameModal] = useState(false);
+    const [isLinking, setIsLinking] = useState(false);
 
     const displayName = userProfile?.displayName || '未設定';
     const photoUrl = userProfile?.photoUrl || '';
@@ -43,6 +45,48 @@ export default function ProfilePage() {
         } catch (error) {
             console.error('Failed to save name:', error);
             alert('名前の保存に失敗しました');
+        }
+    };
+
+    const handleLineLink = async () => {
+        if (!user) return;
+        setIsLinking(true);
+        
+        try {
+            // LIFF初期化
+            const initialized = await initializeLiff();
+            if (!initialized) {
+                alert('LINE連携の初期化に失敗しました');
+                setIsLinking(false);
+                return;
+            }
+
+            // すでにLINEログイン済みか確認
+            if (!isLineLoggedIn()) {
+                // LINEログインを実行（リダイレクトされる）
+                loginWithLine();
+                return;
+            }
+
+            // LINEプロフィールを取得
+            const lineProfile = await getLineProfile();
+            if (!lineProfile) {
+                alert('LINEプロフィールの取得に失敗しました');
+                setIsLinking(false);
+                return;
+            }
+
+            // FirestoreにlineUserIdを保存
+            await updateProfile(user.uid, {
+                lineUserId: lineProfile.userId,
+            });
+
+            alert('LINE連携が完了しました！');
+        } catch (error) {
+            console.error('LINE連携エラー:', error);
+            alert('LINE連携に失敗しました');
+        } finally {
+            setIsLinking(false);
         }
     };
 
@@ -123,23 +167,46 @@ export default function ProfilePage() {
                     </button>
                 </div>
 
-                {/* LINE連携ステータス */}
+                {/* LINE連携 */}
                 <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-                    <div className="w-full p-4 flex justify-between items-center">
-                        <div className="flex items-center gap-3">
-                            {lineLinked ? (
+                    {lineLinked ? (
+                        // 連携済み
+                        <div className="w-full p-4 flex justify-between items-center">
+                            <div className="flex items-center gap-3">
                                 <CheckCircle className="w-5 h-5 text-green-500" />
-                            ) : (
-                                <XCircle className="w-5 h-5 text-gray-400" />
-                            )}
-                            <div className="text-left">
-                                <p className="text-sm font-bold text-gray-900">LINE連携</p>
-                                <p className="text-xs text-gray-500 mt-0.5">
-                                    {lineLinked ? '連携済み' : '未連携'}
-                                </p>
+                                <div className="text-left">
+                                    <p className="text-sm font-bold text-gray-900">LINE連携</p>
+                                    <p className="text-xs text-green-600 mt-0.5">
+                                        連携済み ✓
+                                    </p>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    ) : (
+                        // 未連携 → ボタン表示
+                        <button
+                            onClick={handleLineLink}
+                            disabled={isLinking}
+                            className="w-full p-4 flex justify-between items-center hover:bg-gray-50 transition-colors disabled:opacity-50"
+                        >
+                            <div className="flex items-center gap-3">
+                                {isLinking ? (
+                                    <Loader2 className="w-5 h-5 text-green-500 animate-spin" />
+                                ) : (
+                                    <XCircle className="w-5 h-5 text-gray-400" />
+                                )}
+                                <div className="text-left">
+                                    <p className="text-sm font-bold text-gray-900">LINE連携</p>
+                                    <p className="text-xs text-gray-500 mt-0.5">
+                                        {isLinking ? '連携中...' : 'タップして連携する'}
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="bg-[#06C755] text-white text-xs font-bold px-3 py-1.5 rounded-full">
+                                連携する
+                            </div>
+                        </button>
+                    )}
                 </div>
             </div>
 
