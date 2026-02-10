@@ -32,6 +32,7 @@ function StickerCard({
 
     const displayName = userProfile?.displayName || '名無しさん';
     const handle = userProfile?.handle;
+    const likesCount = post.likes?.length || 0;
     // キャプションは最初の10文字だけ表示
     const shortCaption = post.caption ? (post.caption.length > 10 ? post.caption.slice(0, 10) + '…' : post.caption) : null;
 
@@ -62,14 +63,17 @@ function StickerCard({
                 )}
             </div>
 
-            {/* 右下: ♡ボタン（インスタ風） */}
+            {/* 右下: ♡ボタン + カウント（インスタ風） */}
             <button
                 onClick={onToggleLike}
-                className="absolute bottom-2 right-2 w-10 h-10 flex items-center justify-center rounded-full bg-black/30 backdrop-blur-sm drop-shadow-md active:scale-95 transition-transform"
+                className="absolute bottom-2 right-2 flex items-center gap-1 px-2 py-1.5 rounded-full bg-black/30 backdrop-blur-sm drop-shadow-md active:scale-95 transition-transform"
             >
                 <Heart
-                    className={`w-5 h-5 ${isLiked ? 'fill-pink-500 text-pink-500' : 'text-white'}`}
+                    className={`w-4 h-4 ${isLiked ? 'fill-pink-500 text-pink-500' : 'text-white'}`}
                 />
+                {likesCount > 0 && (
+                    <span className="text-white text-xs font-bold">{likesCount}</span>
+                )}
             </button>
 
             {/* 左上: 削除メニュー（自分の投稿のみ） */}
