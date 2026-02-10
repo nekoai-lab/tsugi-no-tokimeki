@@ -27,6 +27,7 @@ export async function updateProfile(
     displayName?: string;
     handle?: string;
     photoUrl?: string;
+    lineUserId?: string;
   }
 ): Promise<void> {
   const profileRef = doc(db, 'artifacts', appId, 'users', userId, 'profile', 'main');
