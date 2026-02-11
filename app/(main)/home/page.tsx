@@ -165,6 +165,8 @@ export default function HomePage() {
                     shops={todayRoute?.shops || []}
                     startTime={todayRoute?.startTime || currentStartTime}
                     endTime={todayRoute?.endTime || currentEndTime}
+                    posts={posts}
+                    favoriteCharacters={currentCharacters}
                     onViewRoute={handleViewSchedule}
                     generating={generating}
                     hasRoute={!!todayRouteId}

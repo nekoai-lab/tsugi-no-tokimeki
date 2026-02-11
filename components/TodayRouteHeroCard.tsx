@@ -1,9 +1,10 @@
 "use client";
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Loader2, Sparkles, Clock, MapPin, Store } from 'lucide-react';
 import { generateRouteOverview } from '@/lib/googleMaps';
-import type { Shop } from '@/lib/types';
+import { calculateDiscoveryProbability, getProbabilityGradient } from '@/lib/probabilityCalculator';
+import type { Shop, Post } from '@/lib/types';
 
 interface TodayRouteHeroCardProps {
   areas: string[];
@@ -11,6 +12,8 @@ interface TodayRouteHeroCardProps {
   shops: Shop[];
   startTime?: string;   // 開始時間（例: "10:00"）
   endTime?: string;     // 終了時間（例: "18:00"）
+  posts?: Post[];       // 目撃情報（発見確率計算用）
+  favoriteCharacters?: string[]; // お気に入りキャラ
   onViewRoute: () => void;
   generating?: boolean;
   hasRoute: boolean;
@@ -33,6 +36,8 @@ export default function TodayRouteHeroCard({
   shops,
   startTime,
   endTime,
+  posts = [],
+  favoriteCharacters = [],
   onViewRoute,
   generating = false,
   hasRoute,
@@ -61,8 +66,20 @@ export default function TodayRouteHeroCard({
   // ルート概要
   const routeOverview = generateRouteOverview(shops, 3);
 
-  // 見つけ確率（ダミー値 - 将来的にはAIで計算）
-  const probability = 78;
+  // 発見確率を計算（目撃情報を分析してパーソナライズ）
+  const probabilityResult = useMemo(() => {
+    if (!hasRoute || shops.length === 0) {
+      return { probability: 50, level: 'medium' as const, emoji: '👀', factors: [] };
+    }
+    return calculateDiscoveryProbability({
+      shops,
+      posts,
+      favoriteCharacters,
+      targetAreas: areas,
+    });
+  }, [hasRoute, shops, posts, favoriteCharacters, areas]);
+
+  const probabilityGradient = getProbabilityGradient(probabilityResult.level);
 
   return (
     <div className="relative bg-gradient-to-br from-pink-50 via-white to-pink-50 rounded-2xl border-2 border-pink-200 shadow-lg overflow-hidden">
@@ -117,9 +134,9 @@ export default function TodayRouteHeroCard({
               </div>
             )}
 
-            {/* 見つけ確率バッジ */}
-            <div className="inline-flex items-center gap-1 bg-gradient-to-r from-pink-500 to-rose-500 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-sm">
-              ✨ 発見確率 {probability}%
+            {/* 見つけ確率バッジ（目撃情報を分析して動的計算） */}
+            <div className={`inline-flex items-center gap-1 bg-gradient-to-r ${probabilityGradient} text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-sm`}>
+              {probabilityResult.emoji} 発見確率 {probabilityResult.probability}%
             </div>
 
             {/* ルート概要 */}
