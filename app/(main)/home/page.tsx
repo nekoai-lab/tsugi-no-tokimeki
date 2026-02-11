@@ -163,6 +163,8 @@ export default function HomePage() {
                     areas={todayRoute?.areas || currentAreas}
                     totalTravelTime={todayRoute?.totalTravelTime || 0}
                     shops={todayRoute?.shops || []}
+                    startTime={todayRoute?.startTime || currentStartTime}
+                    endTime={todayRoute?.endTime || currentEndTime}
                     onViewRoute={handleViewSchedule}
                     generating={generating}
                     hasRoute={!!todayRouteId}
