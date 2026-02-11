@@ -6,6 +6,74 @@ import type { RouteProposal } from '@/lib/types';
 import { WEEKDAYS } from '@/lib/utils';
 import { generateGoogleMapsUrl } from '@/lib/googleMaps';
 
+// シンプルなMarkdownレンダラー
+function renderMarkdown(text: string) {
+    return text
+        .split('\n')
+        .map((line, index) => {
+            // 見出し ### を処理
+            if (line.startsWith('### ')) {
+                return (
+                    <h3 key={index} className="font-bold text-sm text-blue-800 mt-3 mb-1">
+                        {line.replace(/^### /, '')}
+                    </h3>
+                );
+            }
+            // 見出し ## を処理
+            if (line.startsWith('## ')) {
+                return (
+                    <h2 key={index} className="font-bold text-base text-blue-900 mt-3 mb-2">
+                        {line.replace(/^## /, '')}
+                    </h2>
+                );
+            }
+            // 見出し # を処理
+            if (line.startsWith('# ')) {
+                return (
+                    <h1 key={index} className="font-bold text-lg text-blue-900 mt-3 mb-2">
+                        {line.replace(/^# /, '')}
+                    </h1>
+                );
+            }
+            // 箇条書き - を処理
+            if (line.startsWith('- ')) {
+                return (
+                    <li key={index} className="ml-4 text-xs text-blue-700">
+                        {line.replace(/^- /, '• ')}
+                    </li>
+                );
+            }
+            // 箇条書き * を処理
+            if (line.startsWith('* ')) {
+                return (
+                    <li key={index} className="ml-4 text-xs text-blue-700">
+                        {line.replace(/^\* /, '• ')}
+                    </li>
+                );
+            }
+            // 太字 **text** を処理
+            const boldRegex = /\*\*(.*?)\*\*/g;
+            if (boldRegex.test(line)) {
+                const parts = line.split(boldRegex);
+                return (
+                    <p key={index} className="text-xs text-blue-700 mb-1">
+                        {parts.map((part, i) => (i % 2 === 1 ? <strong key={i}>{part}</strong> : part))}
+                    </p>
+                );
+            }
+            // 空行
+            if (line.trim() === '') {
+                return <br key={index} />;
+            }
+            // 通常のテキスト
+            return (
+                <p key={index} className="text-xs text-blue-700 mb-1">
+                    {line}
+                </p>
+            );
+        });
+}
+
 interface RouteDetailViewProps {
     proposal: RouteProposal;
     onBack: () => void;
@@ -85,44 +153,95 @@ export default function RouteDetailView({
 
                     {/* Shops List */}
                     <div className="space-y-4">
-                        {proposal.shops.map((shop, index) => (
-                            <div key={shop.id}>
-                                <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
-                                    <div className="flex items-start gap-3">
-                                        <div className="bg-pink-100 text-pink-600 rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm flex-shrink-0">
-                                            {index + 1}
-                                        </div>
-                                        <div className="flex-1">
-                                            <div className="flex items-baseline gap-2 mb-1">
-                                                <span className="font-bold text-gray-800">{shop.time}</span>
-                                                <span className="text-sm font-bold text-gray-700">{shop.name}</span>
-                                            </div>
-                                            <p className="text-sm text-gray-600 mb-2">{shop.description}</p>
-                                            {shop.travelTimeFromPrevious ? (
-                                                <div className="flex items-center gap-1 text-xs text-gray-500">
-                                                    <MapPin className="w-3 h-3" />
-                                                    前の店から徒歩{shop.travelTimeFromPrevious}分
-                                                </div>
-                                            ) : (
-                                                <div className="flex items-center gap-1 text-xs text-gray-500">
-                                                    <MapPin className="w-3 h-3" />
-                                                    {getAreasDisplay()}エリア
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
+                        {proposal.shops.map((shop, index) => {
+                            // カテゴリーに応じたスタイル
+                            const getCategoryStyle = () => {
+                                switch (shop.category) {
+                                    case 'lunch':
+                                        return {
+                                            bg: 'bg-orange-50',
+                                            border: 'border-orange-200',
+                                            badgeBg: 'bg-orange-100',
+                                            badgeText: 'text-orange-600',
+                                            icon: '🍽️',
+                                            label: 'ランチ'
+                                        };
+                                    case 'cafe':
+                                        return {
+                                            bg: 'bg-amber-50',
+                                            border: 'border-amber-200',
+                                            badgeBg: 'bg-amber-100',
+                                            badgeText: 'text-amber-600',
+                                            icon: '☕',
+                                            label: 'お茶'
+                                        };
+                                    case 'dinner':
+                                        return {
+                                            bg: 'bg-indigo-50',
+                                            border: 'border-indigo-200',
+                                            badgeBg: 'bg-indigo-100',
+                                            badgeText: 'text-indigo-600',
+                                            icon: '🍴',
+                                            label: 'ディナー'
+                                        };
+                                    default:
+                                        return {
+                                            bg: 'bg-white',
+                                            border: 'border-gray-100',
+                                            badgeBg: 'bg-pink-100',
+                                            badgeText: 'text-pink-600',
+                                            icon: '🛍️',
+                                            label: 'ショップ'
+                                        };
+                                }
+                            };
 
-                                {/* Arrow between shops */}
-                                {index < proposal.shops.length - 1 && (
-                                    <div className="flex justify-center py-2">
-                                        <div className="text-xs text-gray-400 font-bold">
-                                            ↓ 徒歩{proposal.shops[index + 1].travelTimeFromPrevious || 0}分
+                            const style = getCategoryStyle();
+
+                            return (
+                                <div key={shop.id}>
+                                    <div className={`${style.bg} rounded-xl p-4 border ${style.border} shadow-sm`}>
+                                        <div className="flex items-start gap-3">
+                                            <div className={`${style.badgeBg} ${style.badgeText} rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm flex-shrink-0`}>
+                                                {shop.category && shop.category !== 'shop' ? style.icon : index + 1}
+                                            </div>
+                                            <div className="flex-1">
+                                                <div className="flex items-baseline gap-2 mb-1">
+                                                    <span className="font-bold text-gray-800">{shop.time}</span>
+                                                    <span className="text-sm font-bold text-gray-700">{shop.name}</span>
+                                                    {shop.category && shop.category !== 'shop' && (
+                                                        <span className={`text-xs px-2 py-0.5 rounded-full ${style.badgeBg} ${style.badgeText}`}>
+                                                            {style.label}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <p className="text-sm text-gray-600 mb-2">{shop.description}</p>
+                                                {shop.travelTimeFromPrevious ? (
+                                                    <div className="flex items-center gap-1 text-xs text-gray-500">
+                                                        <MapPin className="w-3 h-3" />
+                                                        前の店から{shop.travelMode === 'train' ? '電車' : '徒歩'}{shop.travelTimeFromPrevious}分
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex items-center gap-1 text-xs text-gray-500">
+                                                        <MapPin className="w-3 h-3" />
+                                                        {getAreasDisplay()}エリア
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
-                                )}
-                            </div>
-                        ))}
+
+                                    {/* Arrow between shops */}
+                                    {index < proposal.shops.length - 1 && (
+                                        <div className="flex justify-center py-2">
+                                            <div className="text-xs text-gray-400 font-bold">
+                                                ↓ {proposal.shops[index + 1].travelMode === 'train' ? '🚃 電車' : '🚶‍♀️ 徒歩'}{proposal.shops[index + 1].travelTimeFromPrevious || 0}分
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
 
                     {/* Summary */}
@@ -133,9 +252,9 @@ export default function RouteDetailView({
                         {proposal.supplementaryInfo && (
                             <div className="mt-3 pt-3 border-t border-blue-200">
                                 <p className="text-xs font-bold text-blue-700 mb-2">📝 補足情報</p>
-                                <p className="text-xs text-blue-700 whitespace-pre-line leading-relaxed">
-                                    {proposal.supplementaryInfo}
-                                </p>
+                                <div className="leading-relaxed">
+                                    {renderMarkdown(proposal.supplementaryInfo)}
+                                </div>
                             </div>
                         )}
                     </div>

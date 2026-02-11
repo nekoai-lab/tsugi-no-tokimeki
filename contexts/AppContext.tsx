@@ -306,6 +306,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }, (err) => console.error("Events fetch error:", err));
 
     return () => {
+      console.log('🔥 [Firestore] Cleaning up subscriptions');
       unsubPosts();
       unsubEvents();
     };
@@ -357,7 +358,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [posts, userProfile]);
 
   const handleSignOut = async () => {
+    console.log('🚪 [SignOut] Starting sign out process');
+    
+    // Firestoreのデータをクリア
+    setPosts([]);
+    setEvents([]);
+    
+    // ログアウト実行
     await signOut(auth);
+    
+    console.log('🚪 [SignOut] Sign out completed');
   };
 
   return (

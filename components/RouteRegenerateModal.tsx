@@ -9,6 +9,52 @@ interface ChatMessage {
     text: string;
 }
 
+// シンプルなMarkdownレンダラー
+function renderMarkdown(text: string) {
+    return text
+        .split('\n')
+        .map((line, index) => {
+            // 見出し
+            if (line.startsWith('### ')) {
+                return <h3 key={index} className="text-base font-bold mt-3 mb-1">{line.slice(4)}</h3>;
+            }
+            if (line.startsWith('## ')) {
+                return <h2 key={index} className="text-lg font-bold mt-3 mb-2">{line.slice(3)}</h2>;
+            }
+            if (line.startsWith('# ')) {
+                return <h1 key={index} className="text-xl font-bold mt-3 mb-2">{line.slice(2)}</h1>;
+            }
+
+            // リスト
+            if (line.startsWith('- ')) {
+                return (
+                    <li key={index} className="ml-4 mb-1">
+                        {line.slice(2)}
+                    </li>
+                );
+            }
+
+            // 太字（**text**）
+            const boldPattern = /\*\*(.*?)\*\*/g;
+            if (boldPattern.test(line)) {
+                const parts = line.split(boldPattern);
+                return (
+                    <p key={index} className="mb-1">
+                        {parts.map((part, i) => (i % 2 === 1 ? <strong key={i}>{part}</strong> : part))}
+                    </p>
+                );
+            }
+
+            // 空行
+            if (line.trim() === '') {
+                return <br key={index} />;
+            }
+
+            // 通常のテキスト
+            return <p key={index} className="mb-1">{line}</p>;
+        });
+}
+
 interface RouteRegenerateModalProps {
     proposal: RouteProposal;
     onClose: () => void;
@@ -82,6 +128,7 @@ export default function RouteRegenerateModal({
                     userArea: proposal.area || '',
                     existingProposal: buildExistingProposalText(),
                     modificationRequest: text,
+                    isInitialGeneration: false, // 再生成フラグ
                 }),
             });
 
@@ -137,13 +184,14 @@ export default function RouteRegenerateModal({
                             className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                         >
                             <div
-                                className={`max-w-[85%] rounded-2xl px-4 py-3 ${
-                                    msg.role === 'user'
+                                className={`max-w-[85%] rounded-2xl px-4 py-3 ${msg.role === 'user'
                                         ? 'bg-pink-500 text-white'
                                         : 'bg-gray-100 text-gray-800'
-                                }`}
+                                    }`}
                             >
-                                <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.text}</p>
+                                <div className="text-sm leading-relaxed">
+                                    {msg.role === 'ai' ? renderMarkdown(msg.text) : msg.text}
+                                </div>
                             </div>
                         </div>
                     ))}
