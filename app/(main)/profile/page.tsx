@@ -7,14 +7,12 @@ import { Bell, ChevronRight, Edit2, User, CheckCircle, XCircle, Loader2 } from '
 import ProfileIconEditModal from '@/components/ProfileIconEditModal';
 import ProfileNameEditModal from '@/components/ProfileNameEditModal';
 import { updateProfile } from '@/lib/profileService';
-import { initializeLiff, loginWithLine, getLineProfile, isLineLoggedIn } from '@/lib/liff';
 
 export default function ProfilePage() {
     const router = useRouter();
-    const { user, userProfile, signOut } = useApp();
+    const { user, userProfile, signOut, linkLine, isLinkingLine } = useApp();
     const [showIconModal, setShowIconModal] = useState(false);
     const [showNameModal, setShowNameModal] = useState(false);
-    const [isLinking, setIsLinking] = useState(false);
 
     const displayName = userProfile?.displayName || '未設定';
     const photoUrl = userProfile?.photoUrl || '';
@@ -45,48 +43,6 @@ export default function ProfilePage() {
         } catch (error) {
             console.error('Failed to save name:', error);
             alert('名前の保存に失敗しました');
-        }
-    };
-
-    const handleLineLink = async () => {
-        if (!user) return;
-        setIsLinking(true);
-        
-        try {
-            // LIFF初期化
-            const initialized = await initializeLiff();
-            if (!initialized) {
-                alert('LINE連携の初期化に失敗しました');
-                setIsLinking(false);
-                return;
-            }
-
-            // すでにLINEログイン済みか確認
-            if (!isLineLoggedIn()) {
-                // LINEログインを実行（リダイレクトされる）
-                loginWithLine();
-                return;
-            }
-
-            // LINEプロフィールを取得
-            const lineProfile = await getLineProfile();
-            if (!lineProfile) {
-                alert('LINEプロフィールの取得に失敗しました');
-                setIsLinking(false);
-                return;
-            }
-
-            // FirestoreにlineUserIdを保存
-            await updateProfile(user.uid, {
-                lineUserId: lineProfile.userId,
-            });
-
-            alert('LINE連携が完了しました！');
-        } catch (error) {
-            console.error('LINE連携エラー:', error);
-            alert('LINE連携に失敗しました');
-        } finally {
-            setIsLinking(false);
         }
     };
 
@@ -185,12 +141,12 @@ export default function ProfilePage() {
                     ) : (
                         // 未連携 → ボタン表示
                         <button
-                            onClick={handleLineLink}
-                            disabled={isLinking}
+                            onClick={linkLine}
+                            disabled={isLinkingLine}
                             className="w-full p-4 flex justify-between items-center hover:bg-gray-50 transition-colors disabled:opacity-50"
                         >
                             <div className="flex items-center gap-3">
-                                {isLinking ? (
+                                {isLinkingLine ? (
                                     <Loader2 className="w-5 h-5 text-green-500 animate-spin" />
                                 ) : (
                                     <XCircle className="w-5 h-5 text-gray-400" />
@@ -198,7 +154,7 @@ export default function ProfilePage() {
                                 <div className="text-left">
                                     <p className="text-sm font-bold text-gray-900">LINE連携</p>
                                     <p className="text-xs text-gray-500 mt-0.5">
-                                        {isLinking ? '連携中...' : 'タップして連携する'}
+                                        {isLinkingLine ? '連携中...' : 'タップして連携する'}
                                     </p>
                                 </div>
                             </div>

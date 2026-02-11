@@ -4,6 +4,8 @@ import React, { createContext, useContext, useState, useEffect, useMemo, useRef 
 import { signInAnonymously, onAuthStateChanged, signOut, type Unsubscribe } from 'firebase/auth';
 import { collection, query, orderBy, onSnapshot, doc } from 'firebase/firestore';
 import { auth, db, appId } from '@/lib/firebase';
+import { linkLineAccount } from '@/lib/userService';
+import { initializeLiff, isLineLoggedIn, getLineProfile } from '@/lib/liff';
 import type { UserProfile, Post, StoreEvent, Suggestion, FirebaseUser } from '@/lib/types';
 
 interface AppContextType {
@@ -17,6 +19,9 @@ interface AppContextType {
   // モーダル表示中かどうか（ナビ・FAB非表示用）
   isModalOpen: boolean;
   setIsModalOpen: (open: boolean) => void;
+  // LINE連携を手動で実行
+  linkLine: () => Promise<void>;
+  isLinkingLine: boolean;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -31,9 +36,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [events, setEvents] = useState<StoreEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLinkingLine, setIsLinkingLine] = useState(false);
   
   // クロージャ問題を避けるためrefで状態を追跡
   const authReadyRef = useRef(false);
+  const lineLinkCheckedRef = useRef(false);
   const authUnsubRef = useRef<Unsubscribe | null>(null);
   const profileUnsubRef = useRef<Unsubscribe | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -180,6 +187,96 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     };
   }, []); // 依存配列を空に - アプリで1回だけ実行
 
+  // LINE連携チェック - ユーザー認証後にLIFFを初期化し、LINEログイン済みなら自動連携
+  useEffect(() => {
+    if (!user || lineLinkCheckedRef.current) return;
+    
+    const checkLineLink = async () => {
+      try {
+        console.log('📱 [LINE] Checking LINE link status...');
+        
+        // LIFF初期化
+        const initialized = await initializeLiff();
+        if (!initialized) {
+          console.log('📱 [LINE] LIFF initialization failed, skipping');
+          return;
+        }
+        
+        // LINEログイン済みかチェック
+        if (!isLineLoggedIn()) {
+          console.log('📱 [LINE] Not logged in to LINE');
+          return;
+        }
+        
+        // LINEプロフィール取得
+        const lineProfile = await getLineProfile();
+        if (!lineProfile) {
+          console.log('📱 [LINE] Failed to get LINE profile');
+          return;
+        }
+        
+        console.log('📱 [LINE] LINE logged in, userId:', lineProfile.userId.slice(0, 8) + '...');
+        
+        // 現在のプロフィールにlineUserIdがあるかチェック
+        // (userProfileはstateなので、この時点ではまだnullの可能性がある)
+        // → linkLineAccount内で自動的に処理される
+        
+        // LINE連携を実行
+        await linkLineAccount(user.uid, lineProfile.userId, lineProfile.displayName);
+        console.log('📱 [LINE] LINE account linked successfully');
+        
+      } catch (error) {
+        console.error('📱 [LINE] Error checking LINE link:', error);
+      } finally {
+        lineLinkCheckedRef.current = true;
+      }
+    };
+    
+    // 少し遅延させて実行（プロフィール読み込みを待つ）
+    const timer = setTimeout(checkLineLink, 500);
+    return () => clearTimeout(timer);
+  }, [user]);
+
+  // 手動でLINE連携を実行（プロフィール画面から呼び出し）
+  const handleLinkLine = async () => {
+    if (!user) return;
+    
+    setIsLinkingLine(true);
+    try {
+      // LIFF初期化
+      const initialized = await initializeLiff();
+      if (!initialized) {
+        alert('LINE連携の初期化に失敗しました');
+        return;
+      }
+      
+      // LINEログイン済みかチェック
+      if (!isLineLoggedIn()) {
+        // LINEログインページにリダイレクト
+        const liff = await import('@line/liff').then(m => m.default);
+        liff.login();
+        return; // リダイレクトされるので、ここで終了
+      }
+      
+      // LINEプロフィール取得
+      const lineProfile = await getLineProfile();
+      if (!lineProfile) {
+        alert('LINEプロフィールの取得に失敗しました');
+        return;
+      }
+      
+      // LINE連携を実行
+      await linkLineAccount(user.uid, lineProfile.userId, lineProfile.displayName);
+      alert('LINE連携が完了しました！');
+      
+    } catch (error) {
+      console.error('LINE連携エラー:', error);
+      alert('LINE連携に失敗しました');
+    } finally {
+      setIsLinkingLine(false);
+    }
+  };
+
   // Firestore Subscriptions
   useEffect(() => {
     if (!user) return;
@@ -268,6 +365,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         signOut: handleSignOut,
         isModalOpen,
         setIsModalOpen,
+        linkLine: handleLinkLine,
+        isLinkingLine,
       }}
     >
       {children}
