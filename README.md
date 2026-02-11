@@ -8,16 +8,20 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue?logo=typescript)
 ![Firebase](https://img.shields.io/badge/Firebase-Firestore-orange?logo=firebase)
 ![Cloud Run](https://img.shields.io/badge/Cloud%20Run-Deployed-4285F4?logo=googlecloud)
+![LINE](https://img.shields.io/badge/LINE-Messaging%20API-00C300?logo=line)
+![Vertex AI](https://img.shields.io/badge/Vertex%20AI-Gemini%202.5-4285F4?logo=googlecloud)
+
+🔗 **デモ**: [https://tsugi-no-tokimeki-265901745615.asia-northeast1.run.app](https://tsugi-no-tokimeki-265901745615.asia-northeast1.run.app)
 
 ## 📖 プロジェクト概要
 
-**Tsugi no Tokimeki** は、お気に入りのキャラグッズ（シール）の目撃情報をリアルタイムで共有し、AIがシールを見に行くスケジュールを立ててユーザーに提案するWebアプリケーションです。
+**Tsugi no Tokimeki** は、お気に入りのキャラグッズ（シール）の目撃情報をリアルタイムで共有し、AIがシールを見に行くスケジュールを立ててユーザーにLINEで提案するWebアプリケーションです。
 
 - 📍 コミュニティからの目撃情報をリアルタイム収集
-- 🤖 **Vertex AI (Gemini 2.5)** による行動判断 ✅
-- ⏰ **Cloud Scheduler** で朝8時・夕18時に自動分析、毎朝9時にルート自動生成 ✅
-- 📅 ユーザーの空き時間 × イベント情報のマッチング
-- 🔔 **LINE通知** でプッシュ通知 ✅
+- 🤖 **Vertex AI (Gemini 2.5)** による行動判断・ルート提案 ✅
+- ⏰ **Cloud Scheduler** で朝8時に「今日のおすすめルート＋目撃情報」、夕方18時に「今日の目撃まとめ」を自動通知 ✅
+- 📅 ユーザーの空き時間 × エリア × 目撃情報のスマートマッチング
+- 🔔 **LINE通知** でパーソナライズされたプッシュ通知 ✅
 
 ---
 
@@ -59,14 +63,15 @@
 | **フィード表示** | コミュニティ投稿のリアルタイム表示・フィルター機能・いいね機能 | ✅ 実装済み |
 | **行動判断 AI** | 今動くべきかの判断と根拠表示（For You画面） | ✅ 実装済み |
 | **Vertex AI 統合** | Gemini 2.5 Flash による本格的なAI推論 | ✅ 実装済み |
-| **Cloud Scheduler** | 朝8時+夕18時の定期分析、毎朝9時の自動ルート生成 | ✅ 実装済み |
+| **朝の統合通知** | 毎朝8時に「今日のおすすめルート＋直近の目撃情報」をLINEで自動通知 | ✅ 実装済み |
+| **夕方のまとめ通知** | 夕方18時に「今日の目撃情報まとめ」をLINEで自動通知 | ✅ 実装済み |
 | **ルート提案 AI** | AIがショップ巡回スケジュールを作成 | ✅ 実装済み |
 | **ルート再生成** | AIとチャット形式でルートを修正・再提案 | ✅ 実装済み |
 | **カレンダー** | ルート提案の一覧表示・詳細確認・確定 | ✅ 実装済み |
 | **シールアルバム** | シール帳の写真を投稿・共有 | ✅ 実装済み |
-| **プロフィール編集** | ユーザー設定の編集機能（時間設定含む） | ✅ 実装済み |
-| **通知設定** | LINE通知のオン/オフ設定 | ✅ 実装済み |
-| **LINE連携** | LIFF ログイン + Messaging API でプッシュ通知 | ✅ 実装済み |
+| **プロフィール編集** | ユーザー設定の編集機能（表示名・ハンドル名・LINE連携） | ✅ 実装済み |
+| **通知設定** | 朝の通知・夕方の通知を個別にオン/オフ設定 | ✅ 実装済み |
+| **LINE連携** | LIFF ログイン + Messaging API + Flex Message でリッチ通知 | ✅ 実装済み |
 
 ---
 
@@ -96,7 +101,7 @@ graph TD
         
         subgraph "AI Layer ✅"
             VertexAI[Vertex AI<br/>Gemini 2.5]
-            Scheduler[Cloud Scheduler<br/>朝8時 + 夕18時]
+            Scheduler[Cloud Scheduler<br/>朝8時: ルート+目撃<br/>夕18時: まとめ]
         end
     end
     
@@ -217,7 +222,9 @@ tsugi-no-tokimeki/
 │       │   └── route.ts
 │       ├── analyze-all/      # Cloud Scheduler用 全ユーザー分析 API
 │       │   └── route.ts
-│       ├── generate-daily-routes/  # 毎朝9時の自動ルート生成 API
+│       ├── morning-notification/  # 朝8時の統合通知 API（ルート+目撃情報）
+│       │   └── route.ts
+│       ├── evening-notification/  # 夕方18時のまとめ通知 API
 │       │   └── route.ts
 │       ├── notify-post/      # 投稿通知 API
 │       │   └── route.ts
@@ -329,7 +336,7 @@ tsugi-no-tokimeki/
 
 - [x] Vertex AI (Gemini 2.5) 連携
 - [x] Route Handlers (`/api/analyze`, `/api/analyze-all`)
-- [x] Cloud Scheduler 定期実行（朝8時 + 夕18時）
+- [x] Cloud Scheduler 定期実行
 
 ### Phase 3: LINE連携 ✅ 完了
 
@@ -337,16 +344,25 @@ tsugi-no-tokimeki/
 - [x] LINE 友達登録機能（オンボーディング Step 1）
 - [x] lineUserId を Firestore に保存
 - [x] Secret Manager に LINE シークレット登録
-- [x] プッシュ通知 API 実装（`/api/analyze-all` に統合）
+- [x] プッシュ通知 API 実装
 - [x] ルート提案 UI（AIでスケジュール作成）
 - [x] プロフィール編集機能
 - [x] 投稿への入力内容反映
 
-### Phase 4: 今後の予定
+### Phase 4: 統合通知システム ✅ 完了
+
+- [x] 朝の統合通知（`/api/morning-notification`）- ルート提案 + 目撃情報
+- [x] 夕方のまとめ通知（`/api/evening-notification`）- 今日の目撃情報まとめ
+- [x] LINE Flex Message によるリッチ通知
+- [x] 通知設定画面のUI刷新（朝/夕方トグル）
+- [x] プロフィール画面からのLINE連携ボタン
+- [x] LINE連携状態の自動検出・引き継ぎ
+
+### Phase 5: 今後の予定
 
 - [ ] Event Matcher（イベント情報との連携）
 - [ ] PWA 対応
-- [ ] LINE Webhook 受信
+- [ ] LINE Webhook 受信（双方向コミュニケーション）
 - [ ] 転売対策（posts_private コレクション）
 - [ ] 地図表示・ジオロケーション連携
 - [ ] ショップ営業時間データベース
@@ -440,6 +456,7 @@ Cloud Build トリガーの「代入変数」で設定：
 | `FIREBASE_APP_ID` | Firebase App ID |
 | `LINE_CHANNEL_ACCESS_TOKEN` | LINE Messaging API アクセストークン |
 | `LINE_CHANNEL_SECRET` | LINE チャネルシークレット |
+| `CRON_SECRET` | Cloud Scheduler認証用シークレット |
 | `_NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` | Firebase Sender ID |
 | `_NEXT_PUBLIC_FIREBASE_APP_ID` | Firebase App ID |
 
@@ -552,9 +569,10 @@ Cloud Run                              LINE Messaging API
 | エンドポイント | 用途 | 状態 |
 |---------------|------|------|
 | `/api/analyze` | 個別ユーザー分析 | ✅ 実装済み |
-| `/api/analyze-all` | 全ユーザー一括分析 + プッシュ通知 | ✅ 実装済み |
+| `/api/analyze-all` | 全ユーザー一括分析 | ✅ 実装済み |
+| `/api/morning-notification` | 朝8時の統合通知（ルート＋目撃情報） | ✅ 実装済み |
+| `/api/evening-notification` | 夕方18時の目撃まとめ通知 | ✅ 実装済み |
 | `/api/route-proposal` | ルート提案（AI スケジュール作成・再生成） | ✅ 実装済み |
-| `/api/generate-daily-routes` | 毎朝9時の自動ルート生成（Cloud Scheduler） | ✅ 実装済み |
 | `/api/notify-post` | 投稿通知 | ✅ 実装済み |
 | `/api/line-webhook` | LINE Webhook受信 | 🔄 予定 |
 
@@ -568,15 +586,18 @@ sequenceDiagram
     participant LINE as LINE Messaging API
     participant User as ユーザー
 
-    Note over Scheduler: 毎日 8:00 / 18:00
-    Scheduler->>API: POST /api/analyze-all
-    API->>AI: 全ユーザー分析
-    AI-->>API: 判定結果 (go/gather/wait)
-    
-    alt decision === "go"
-        API->>LINE: プッシュメッセージ送信
-        LINE-->>User: 「🎯 いま動こう！」通知
-    end
+    Note over Scheduler: 毎朝 8:00
+    Scheduler->>API: POST /api/morning-notification
+    API->>AI: ルート提案を生成
+    API->>API: 直近の目撃情報を取得
+    API->>LINE: Flex Message 送信
+    LINE-->>User: 「🌅 今日のおすすめルート＋目撃情報」
+
+    Note over Scheduler: 毎夕 18:00
+    Scheduler->>API: POST /api/evening-notification
+    API->>API: 今日の目撃情報を集計
+    API->>LINE: Flex Message 送信
+    LINE-->>User: 「🌇 今日の目撃情報まとめ」
 ```
 
 ### 実装済みの機能
@@ -584,8 +605,10 @@ sequenceDiagram
 | 機能 | 説明 | 状態 |
 |------|------|------|
 | **LINEログイン** | LIFF SDK でユーザー認証 | ✅ |
-| **プッシュ通知** | 「go」判定時に自動通知 | ✅ |
-| **リッチメッセージ** | 目撃場所・残り個数をカード形式で通知 | 🔄 予定 |
+| **朝の統合通知** | ルート提案 + 目撃情報を1つのメッセージで | ✅ |
+| **夕方のまとめ通知** | 今日の目撃情報をサマリー | ✅ |
+| **Flex Message** | LINE のリッチなカード形式メッセージ | ✅ |
+| **通知オン/オフ設定** | 朝・夕方を個別に設定可能 | ✅ |
 | **クイックリプライ** | 「行く」「スキップ」をワンタップで回答 | 🔄 予定 |
 
 ### ユーザー体験フロー
@@ -602,6 +625,26 @@ sequenceDiagram
 4. Step 7 確認・保存
        ↓
 5. ホーム画面へ
+       ↓
+6. 毎朝8時「今日のおすすめルート＋目撃情報」がLINEに届く
+       ↓
+7. 夕方18時「今日の目撃まとめ」がLINEに届く
+```
+
+### 通知設定フロー
+
+```
+プロフィール画面
+    │
+    ├── 「LINE連携」ボタン → LINE認証 → lineUserId保存
+    │
+    └── 「通知設定」へ移動
+            │
+            ├── 🌅 朝の通知（8:00）: ON/OFF
+            │       └── 今日のおすすめルート＋目撃情報
+            │
+            └── 🌇 夕方の通知（18:00）: ON/OFF
+                    └── 今日の目撃情報まとめ
 ```
 
 ### LINE連携の環境変数
@@ -613,7 +656,32 @@ NEXT_PUBLIC_LIFF_ID=your_liff_id
 # LINE Messaging API (バックエンド - Secret Manager)
 LINE_CHANNEL_ACCESS_TOKEN=your_channel_access_token
 LINE_CHANNEL_SECRET=your_channel_secret
+
+# Cloud Scheduler認証用
+CRON_SECRET=your_cron_secret
 ```
+
+---
+
+## ⏰ Cloud Scheduler 設定
+
+朝8時と夕方18時の自動通知には Cloud Scheduler を使用しています。
+
+### ジョブ一覧
+
+| ジョブ名 | スケジュール | エンドポイント | 説明 |
+|---------|-------------|---------------|------|
+| `morning-notification` | `0 8 * * *` (毎朝8時) | `/api/morning-notification` | ルート提案＋目撃情報 |
+| `evening-notification` | `0 18 * * *` (毎夕18時) | `/api/evening-notification` | 今日の目撃まとめ |
+
+### 必要なHTTPヘッダー
+
+```
+Content-Type: application/json
+Authorization: Bearer {CRON_SECRET}
+```
+
+詳細な設定手順は [docs/CLOUD_SCHEDULER_SETUP.md](docs/CLOUD_SCHEDULER_SETUP.md) を参照してください。
 
 ---
 
@@ -621,7 +689,8 @@ LINE_CHANNEL_SECRET=your_channel_secret
 
 - **Development**: [yumemiru-masomi](https://github.com/yumemiru-masomi) × [nekoai-lab](https://github.com/nekoai-lab)
 - **Event**: [第4回 Agentic AI Hackathon with Google Cloud](https://zenn.dev/hackathons/google-cloud-japan-ai-hackathon-vol4)
-- **Powered by**: Google Cloud (Vertex AI, Cloud Run, Firestore)
+- **Powered by**: Google Cloud (Vertex AI Gemini 2.5, Cloud Run, Firestore, Cloud Scheduler)
+- **Integrated with**: LINE Platform (LIFF, Messaging API, Flex Message)
 - **License**: MIT
 
 ---
@@ -640,6 +709,36 @@ LINE_CHANNEL_SECRET=your_channel_secret
 - GitHub Flow（PR ベースの開発）
 - Firebase Emulator でローカル開発
 - Cloud Build による自動デプロイ
+
+---
+
+---
+
+## 📸 スクリーンショット
+
+### 通知例（LINE Flex Message）
+
+**朝の通知（8:00）**
+```
+🌅 おはようございます！
+今日のおすすめルートと、直近の目撃情報をお届けします。
+
+📍 設定エリア: 渋谷、新宿
+🗓 おすすめルート: 渋谷ロフト → 新宿マルイ → ...
+
+👀 直近の目撃情報:
+・渋谷ロフト: ちいかわシール入荷中！
+・新宿マルイ: ハチワレ残り3枚
+```
+
+**夕方の通知（18:00）**
+```
+🌇 今日の目撃情報まとめ
+本日 5件 の目撃情報がありました！
+
+📍 渋谷エリア: 3件
+📍 新宿エリア: 2件
+```
 
 ---
 
