@@ -9,16 +9,23 @@ export default function RootPage() {
   const { user, userProfile, loading } = useApp();
   const router = useRouter();
   const [hasRedirected, setHasRedirected] = useState(false);
+  const [isFromLineAuth, setIsFromLineAuth] = useState(false);
   const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // LINE認証から戻ってきたかどうかを検出
-  const isFromLineAuth = typeof window !== 'undefined' && (
-    window.location.search.includes('liff.state') ||
-    window.location.search.includes('code=') ||
-    window.location.hash.includes('access_token') ||
-    document.referrer.includes('line.me') ||
-    document.referrer.includes('liff')
-  );
+  // LINE認証から戻ってきたかどうかを検出（クライアントサイドのみ）
+  useEffect(() => {
+    const checkLineAuth = 
+      window.location.search.includes('liff.state') ||
+      window.location.search.includes('code=') ||
+      window.location.hash.includes('access_token') ||
+      document.referrer.includes('line.me') ||
+      document.referrer.includes('liff');
+    
+    if (checkLineAuth) {
+      console.log('🔗 Detected return from LINE auth');
+      setIsFromLineAuth(true);
+    }
+  }, []);
 
   // ローディングが長く続く場合のタイムアウト処理
   useEffect(() => {
@@ -44,25 +51,26 @@ export default function RootPage() {
     };
   }, [loading, hasRedirected, router]);
 
+  // LINE認証から戻ってきた場合の強制リダイレクト
   useEffect(() => {
-    // 既にリダイレクト済みなら何もしない
-    if (hasRedirected) return;
+    if (!isFromLineAuth || hasRedirected) return;
     
-    // LINE認証から戻ってきた場合は特別処理
-    if (isFromLineAuth) {
-      console.log('🔗 Detected return from LINE auth');
-      
-      // loadingが完了していなくても、3秒後に強制的に /home へ
-      const forceRedirectTimer = setTimeout(() => {
-        if (!hasRedirected) {
-          console.log('🔗 Force redirecting to /home after LINE auth');
-          setHasRedirected(true);
-          router.push('/home');
-        }
-      }, 3000);
-      
-      return () => clearTimeout(forceRedirectTimer);
-    }
+    // loadingが完了していなくても、3秒後に強制的に /home へ
+    const forceRedirectTimer = setTimeout(() => {
+      if (!hasRedirected) {
+        console.log('🔗 Force redirecting to /home after LINE auth');
+        setHasRedirected(true);
+        router.push('/home');
+      }
+    }, 3000);
+    
+    return () => clearTimeout(forceRedirectTimer);
+  }, [isFromLineAuth, hasRedirected, router]);
+
+  // 通常のリダイレクト処理
+  useEffect(() => {
+    // 既にリダイレクト済み、またはLINE認証からの戻りなら何もしない
+    if (hasRedirected || isFromLineAuth) return;
     
     if (!loading) {
       if (user && userProfile) {
