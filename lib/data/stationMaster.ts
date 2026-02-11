@@ -206,3 +206,4 @@ export function generateTravelTimePrompt(): string {
   return lines.join('\n');
 }
 
+

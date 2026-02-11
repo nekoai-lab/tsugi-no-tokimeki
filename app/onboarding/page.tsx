@@ -219,12 +219,14 @@ function OnboardingContent() {
     }, []); // 依存配列を空に - 1回だけ実行
 
     // Redirect if profile already exists
-    // ただし LIFF return（step=5）の場合はリダイレクトせず、lineUserId保存を優先
     useEffect(() => {
-        if (!loading && user && userProfile && urlStep !== '5') {
+        if (!loading && user && userProfile) {
+            // step=5 の場合でも、既存ユーザーはすぐに /home へ
+            // lineUserId の保存は AppContext の自動LINE連携で行われる
+            console.log('🔵 [Onboarding] User has profile, redirecting to /home');
             router.push('/home');
         }
-    }, [loading, user, userProfile, router, urlStep]);
+    }, [loading, user, userProfile, router]);
 
     const toggleFavorite = (char: string) => {
         setProfile(prev => ({
@@ -336,6 +338,17 @@ function OnboardingContent() {
         // 確認画面へ進む
         setStep(CONFIRM_STEP);
     };
+
+    // step=5 で戻ってきた場合、loading が長く続いたら強制的に /home へ
+    useEffect(() => {
+        if (urlStep === '5' && loading) {
+            const timeout = setTimeout(() => {
+                console.log('🔵 [Onboarding] Loading timeout on step=5, forcing redirect to /home');
+                router.push('/home');
+            }, 5000); // 5秒でタイムアウト
+            return () => clearTimeout(timeout);
+        }
+    }, [urlStep, loading, router]);
 
     if (loading || !user) {
         return (

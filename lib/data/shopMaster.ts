@@ -332,3 +332,4 @@ export function getShopGoogleQuery(shopName: string): string {
   return shop?.googlePlaceQuery ?? `${shopName}, Japan`;
 }
 
+
