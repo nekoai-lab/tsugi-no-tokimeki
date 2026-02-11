@@ -145,6 +145,31 @@ function OnboardingContent() {
         }
     };
 
+    // URLからLIFF系パラメータを除去してクリーンアップ
+    const cleanLiffParamsFromUrl = useCallback(() => {
+        if (typeof window === 'undefined') return;
+        
+        const params = new URLSearchParams(window.location.search);
+        const stepParam = params.get('step');
+        
+        // 除去対象: liff.*, liffClientId, liffRedirectUri, code, state 等
+        const keysToRemove = [...params.keys()].filter(key => 
+            key.startsWith('liff') || 
+            key === 'code' || 
+            key === 'state'
+        );
+        
+        if (keysToRemove.length > 0) {
+            console.log('🧹 [LIFF] Cleaning params from URL:', keysToRemove);
+            
+            // クリーンなURLに置換（リロードなし）
+            const cleanUrl = stepParam 
+                ? `/onboarding?step=${stepParam}` 
+                : '/onboarding';
+            window.history.replaceState({}, '', cleanUrl);
+        }
+    }, []);
+
     // LIFF初期化とLINEログイン状態の確認（1回だけ実行）
     const liffInitializedRef = useRef(false);
     useEffect(() => {
@@ -164,6 +189,10 @@ function OnboardingContent() {
                 try {
                     const initialized = await initializeLiff();
                     setLiffInitialized(initialized);
+                    
+                    // LIFF初期化完了後、URLをクリーンアップ
+                    cleanLiffParamsFromUrl();
+                    
                     if (initialized && isLineLoggedIn()) {
                         const lineProfile = await getLineProfile();
                         if (lineProfile) {
@@ -173,6 +202,8 @@ function OnboardingContent() {
                     }
                 } catch (error) {
                     console.warn('🔵 [LIFF] Init failed in step=5 mode:', error);
+                    // エラー時もURLはクリーンアップ
+                    cleanLiffParamsFromUrl();
                 }
                 return; // step変更なし、ループ防止
             }
@@ -193,6 +224,9 @@ function OnboardingContent() {
 
                 setLiffInitialized(initialized);
                 console.log('🔵 [LIFF] Initialized:', initialized);
+                
+                // LIFF初期化完了後、URLをクリーンアップ
+                cleanLiffParamsFromUrl();
 
                 if (initialized && isLineLoggedIn()) {
                     console.log('🔵 [LIFF] User is logged in, getting profile...');
@@ -211,6 +245,8 @@ function OnboardingContent() {
             } catch (error) {
                 console.error('🔵 [LIFF] Error:', error);
                 setLiffInitialized(false);
+                // エラー時もURLはクリーンアップ
+                cleanLiffParamsFromUrl();
             }
         };
 
