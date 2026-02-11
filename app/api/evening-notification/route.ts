@@ -77,7 +77,8 @@ export async function POST(request: NextRequest) {
         const usersSnapshot = await usersRef.listDocuments();
 
         // 今日の投稿を取得
-        const postsRef = db.collection('artifacts').doc(appId).collection('posts');
+        // パス: artifacts/{appId}/public/data/posts
+        const postsRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('posts');
         const todayPostsSnapshot = await postsRef
             .where('createdAt', '>=', Timestamp.fromDate(todayStartUTC))
             .orderBy('createdAt', 'desc')

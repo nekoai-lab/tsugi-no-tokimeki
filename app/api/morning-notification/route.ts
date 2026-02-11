@@ -97,7 +97,8 @@ export async function POST(request: NextRequest) {
         const usersSnapshot = await usersRef.listDocuments();
 
         // 全投稿を取得（直近の目撃情報用）
-        const postsRef = db.collection('artifacts').doc(appId).collection('posts');
+        // パス: artifacts/{appId}/public/data/posts
+        const postsRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('posts');
         const postsSnapshot = await postsRef
             .orderBy('createdAt', 'desc')
             .limit(100)
@@ -134,9 +135,15 @@ export async function POST(request: NextRequest) {
                     continue;
                 }
 
-                const userAreas = profile.notificationPreferences.areas || 
-                    profile.areas || 
-                    (profile.area ? [profile.area] : []);
+                // エリア情報を取得（複数のソースから優先順位で取得）
+                const userAreas = (
+                    (profile.notificationPreferences?.areas && profile.notificationPreferences.areas.length > 0 
+                        ? profile.notificationPreferences.areas : null) ||
+                    (profile.areas && profile.areas.length > 0 ? profile.areas : null) ||
+                    (profile.area ? [profile.area] : [])
+                );
+                
+                console.log(`User ${userId} areas:`, userAreas);
 
                 // 1. ルート生成
                 let routeData: { areas: string[]; shops: Shop[]; totalTravelTime: number } | null = null;
