@@ -1,8 +1,10 @@
 "use client";
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef } from 'react';
-import type { StickerAlbumPost } from '@/lib/types';
+import { useState, useEffect } from 'react';
+import { Heart, ChevronRight } from 'lucide-react';
+import { getUserProfile } from '@/lib/userService';
+import type { StickerAlbumPost, UserProfile } from '@/lib/types';
 
 interface StickerPostHorizontalListProps {
     posts: StickerAlbumPost[];
@@ -10,72 +12,101 @@ interface StickerPostHorizontalListProps {
 
 export default function StickerPostHorizontalList({ posts }: StickerPostHorizontalListProps) {
     const router = useRouter();
-    const scrollContainerRef = useRef<HTMLDivElement>(null);
-    const currentIndexRef = useRef(0);
+    const [userMap, setUserMap] = useState<Record<string, UserProfile>>({});
 
-    // 4秒ごとに自動スクロール（Hooksは早期リターンの前に呼び出す必要がある）
+    // 投稿者情報を取得
     useEffect(() => {
-        if (posts.length <= 1) return;
+        const authorUids = Array.from(new Set(posts.map(p => p.authorUid).filter(Boolean))) as string[];
+        if (authorUids.length === 0) return;
 
-        const interval = setInterval(() => {
-            if (!scrollContainerRef.current) return;
-
-            currentIndexRef.current = (currentIndexRef.current + 1) % posts.length;
-            const cardWidth = 256 + 12; // w-64 (256px) + gap-3 (12px)
-            const containerWidth = scrollContainerRef.current.clientWidth;
-            
-            // カードを画面の中央に配置するためのスクロール位置を計算
-            const scrollPosition = (currentIndexRef.current * cardWidth) - (containerWidth / 2) + (cardWidth / 2);
-
-            scrollContainerRef.current.scrollTo({
-                left: Math.max(0, scrollPosition), // 負の値にならないように
-                behavior: 'smooth',
-            });
-        }, 4000);
-
-        return () => clearInterval(interval);
-    }, [posts.length]);
+        Promise.all(authorUids.map(uid => getUserProfile(uid)))
+            .then(profiles => {
+                const map: Record<string, UserProfile> = {};
+                profiles.forEach((profile, idx) => {
+                    if (profile) {
+                        map[authorUids[idx]] = profile;
+                    }
+                });
+                setUserMap(map);
+            })
+            .catch(err => console.error('Failed to fetch user profiles:', err));
+    }, [posts]);
 
     if (posts.length === 0) {
         return null;
     }
 
     const handleCardClick = (post: StickerAlbumPost) => {
-        // stickerBookIdはuserIdとして扱う（各ユーザーが1つのシール帳を持つ想定）
-        // ただし、現在の実装では全ユーザーの投稿が1つのコレクションにあるため、
-        // シール帳ページでpostIdでフィルタリングする
         const postId = post.id;
         router.push(`/sticker-book?postId=${postId}`);
     };
 
+    const handleViewAll = () => {
+        router.push('/sticker-book');
+    };
+
     return (
         <div className="w-full">
-            <h3 className="text-sm font-bold text-gray-500 mb-3 px-1">シール帳の最新投稿</h3>
-            <div 
-                ref={scrollContainerRef}
-                className="overflow-x-auto scrollbar-hide -mx-4 px-4"
-            >
-                <div className="flex gap-3 pb-2" style={{ scrollSnapType: 'x mandatory' }}>
-                    {posts.map((post) => (
-                        <div
-                            key={post.id}
-                            onClick={() => handleCardClick(post)}
-                            className="flex-shrink-0 w-64 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden cursor-pointer hover:shadow-md transition-all active:scale-[0.98]"
-                            style={{ scrollSnapAlign: 'start' }}
-                        >
-                            {/* 画像のみ */}
-                            <div className="relative w-full aspect-[4/5] bg-gray-100 overflow-hidden">
-                                <img
-                                    src={post.imageUrl}
-                                    alt={post.caption || 'シール帳の写真'}
-                                    className="w-full h-full object-cover"
-                                />
+            {/* ヘッダー: タイトル + すべて見る */}
+            <div className="flex items-center justify-between mb-3 px-1">
+                <h3 className="text-sm font-bold text-gray-500">シール帳の最近の投稿</h3>
+                <button
+                    onClick={handleViewAll}
+                    className="flex items-center gap-0.5 text-xs text-pink-500 hover:text-pink-600 font-medium transition-colors"
+                >
+                    すべて見る
+                    <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+            </div>
+
+            {/* 横スクロール棚 */}
+            <div className="overflow-x-auto scrollbar-hide -mx-4 px-4">
+                <div 
+                    className="flex gap-3 pb-2"
+                    style={{ scrollSnapType: 'x mandatory' }}
+                >
+                    {posts.map((post) => {
+                        const authorProfile = post.authorUid ? userMap[post.authorUid] : null;
+                        const handle = authorProfile?.handle?.replace(/^@/, '') || null;
+                        const likesCount = post.likes?.length || 0;
+
+                        return (
+                            <div
+                                key={post.id}
+                                onClick={() => handleCardClick(post)}
+                                className="flex-shrink-0 w-[45%] max-w-[160px] cursor-pointer hover:opacity-90 transition-opacity active:scale-[0.98]"
+                                style={{ scrollSnapAlign: 'start' }}
+                            >
+                                {/* カード本体 */}
+                                <div className="relative w-full h-32 rounded-xl overflow-hidden bg-gray-100 shadow-sm">
+                                    {/* 画像 */}
+                                    <img
+                                        src={post.imageUrl}
+                                        alt={post.caption || 'シール帳の写真'}
+                                        className="w-full h-full object-cover"
+                                    />
+
+                                    {/* 下部オーバーレイ（情報） */}
+                                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent pt-6 pb-2 px-2">
+                                        <div className="flex items-center justify-between">
+                                            {/* 左: @handle */}
+                                            <span className="text-white text-xs font-medium truncate max-w-[60%]">
+                                                {handle ? `@${handle}` : '@user'}
+                                            </span>
+
+                                            {/* 右: ♥数 */}
+                                            <div className="flex items-center gap-0.5 text-white">
+                                                <Heart className="w-3 h-3" />
+                                                <span className="text-xs font-medium">{likesCount}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             </div>
         </div>
     );
 }
-
