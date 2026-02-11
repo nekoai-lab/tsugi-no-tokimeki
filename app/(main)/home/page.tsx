@@ -82,6 +82,7 @@ export default function HomePage() {
                         userPosts,
                         favorites: userProfile.favorites || [],
                         userArea: userProfile.area || '',
+                        isInitialGeneration: true, // 初回生成フラグ
                     }),
                 });
 

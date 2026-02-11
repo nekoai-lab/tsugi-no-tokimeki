@@ -429,8 +429,8 @@ function OnboardingContent() {
                                     <BookOpen className="w-12 h-12 text-green-500" />
                                 </div>
                                 <p className="text-base text-gray-700 leading-relaxed">
-                                    みんなのシール帳を見ることができるよ<br />
-                                    ぜひ参考にしてみてね
+                                    みんなのシール帳を見ることができるます<br />
+                                    ぜひ参考にしてみてください
                                 </p>
                             </div>
                         </div>

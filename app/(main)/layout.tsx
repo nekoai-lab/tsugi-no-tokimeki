@@ -20,6 +20,10 @@ export default function MainLayout({
     const router = useRouter();
     const pathname = usePathname();
 
+    // ボトムナビゲーションを表示するページのリスト
+    const pagesWithBottomNav = ['/home', '/feed', '/sticker-book', '/profile'];
+    const showBottomNav = pagesWithBottomNav.includes(pathname);
+
     // 認証チェックとリダイレクト処理を共通化
     useEffect(() => {
         if (!loading && user && !userProfile) {
@@ -42,7 +46,7 @@ export default function MainLayout({
     return (
         <div className="flex flex-col min-h-[100dvh] h-[100dvh] bg-gray-50 max-w-md mx-auto shadow-2xl overflow-hidden relative">
             {/* Header - モーダル表示中は非表示 */}
-            {!isModalOpen && (
+            {!isModalOpen && showBottomNav && (
                 <header className="bg-white/80 backdrop-blur-md px-4 py-4 pt-safe sticky top-0 z-10 border-b border-gray-100 flex justify-between items-center">
                     <h1 className="text-xl font-bold bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">
                         Tsugi no Tokimeki
@@ -53,12 +57,12 @@ export default function MainLayout({
             )}
 
             {/* Main Content Area */}
-            <main className="flex-1 overflow-y-auto pb-20 scrollable">
+            <main className={`flex-1 overflow-y-auto scrollable ${showBottomNav ? 'pb-20' : ''}`}>
                 {children}
             </main>
 
             {/* Floating Action Button for Post - Feedタブのみ表示 */}
-            {!isModalOpen && pathname === '/feed' && (
+            {!isModalOpen && showBottomNav && pathname === '/feed' && (
                 <button
                     onClick={() => setShowPostModal(true)}
                     className="absolute right-4 w-14 h-14 bg-gray-900 text-white rounded-full shadow-lg flex items-center justify-center hover:scale-105 transition-transform z-20"
@@ -69,7 +73,7 @@ export default function MainLayout({
             )}
 
             {/* Floating Action Button for Sticker Album - シール帳タブのみ表示 */}
-            {!isModalOpen && pathname === '/sticker-book' && (
+            {!isModalOpen && showBottomNav && pathname === '/sticker-book' && (
                 <button
                     onClick={() => setShowStickerModal(true)}
                     className="absolute right-4 w-14 h-14 bg-gray-900 text-white rounded-full shadow-lg flex items-center justify-center hover:scale-105 transition-transform z-20"
@@ -79,15 +83,15 @@ export default function MainLayout({
                 </button>
             )}
 
-            {/* Bottom Navigation - モーダル表示中は非表示 */}
-            {!isModalOpen && (
+            {/* Bottom Navigation - モーダル表示中は非表示、主要4ページのみ表示 */}
+            {!isModalOpen && showBottomNav && (
                 <nav
                     className="absolute w-full bg-white border-t border-gray-100 px-6 py-3 flex justify-between items-center z-20"
                     style={{ bottom: 'env(safe-area-inset-bottom, 0px)', paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom, 0px))' }}
                 >
                     <NavButton href="/home" icon={Sparkles} label="For You" />
                     <NavButton href="/feed" icon={Home} label="Feed" />
-                    <NavButton href="/sticker-book" icon={BookOpen} label="シール帳" />
+                    <NavButton href="/sticker-book" icon={BookOpen} label="Sticker Book" />
                     <NavButton href="/profile" icon={User} label="Profile" />
                 </nav>
             )}

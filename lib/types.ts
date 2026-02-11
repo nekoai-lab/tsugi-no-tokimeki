@@ -80,6 +80,8 @@ export interface Shop {
         lng: number;
     };
     travelTimeFromPrevious?: number; // 前の店からの移動時間（分）
+    travelMode?: 'walk' | 'train'; // 移動手段（徒歩 or 電車）
+    category?: 'shop' | 'lunch' | 'cafe' | 'dinner'; // 店舗カテゴリー
 }
 
 export interface RouteProposal {
