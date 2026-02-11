@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { Loader2, Pencil, Sparkles } from 'lucide-react';
+import { Loader2, Sparkles } from 'lucide-react';
 import { generateRouteOverview } from '@/lib/googleMaps';
 import type { Shop } from '@/lib/types';
 
@@ -10,7 +10,6 @@ interface TodayRouteHeroCardProps {
   totalTravelTime: number;
   shops: Shop[];
   onViewRoute: () => void;
-  onRegenerate: () => void;
   generating?: boolean;
   hasRoute: boolean;
 }
@@ -25,14 +24,12 @@ interface TodayRouteHeroCardProps {
  * - ルート概要（A → B → C）
  * - 地図サムネ（プレースホルダー）
  * - 「ルートを見る」メインボタン
- * - 「再生成する」サブボタン
  */
 export default function TodayRouteHeroCard({
   areas,
   totalTravelTime,
   shops,
   onViewRoute,
-  onRegenerate,
   generating = false,
   hasRoute,
 }: TodayRouteHeroCardProps) {
@@ -127,7 +124,7 @@ export default function TodayRouteHeroCard({
         </div>
 
         {/* ボタンエリア */}
-        <div className="mt-4 space-y-2">
+        <div className="mt-4">
           {/* メインボタン: ルートを見る */}
           <button
             onClick={onViewRoute}
@@ -143,18 +140,6 @@ export default function TodayRouteHeroCard({
               'ルートを見る'
             )}
           </button>
-
-          {/* サブボタン: 再生成する */}
-          <div className="flex justify-end">
-            <button
-              onClick={onRegenerate}
-              disabled={generating}
-              className="flex items-center gap-1 text-sm text-gray-500 hover:text-pink-500 transition-colors disabled:opacity-50"
-            >
-              再生成する
-              <Pencil className="w-3.5 h-3.5" />
-            </button>
-          </div>
         </div>
       </div>
     </div>

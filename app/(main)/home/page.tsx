@@ -154,11 +154,6 @@ export default function HomePage() {
         }
     };
 
-    // 再生成ハンドラー（設定条件の編集モーダルを開く）
-    const handleRegenerate = () => {
-        setEditingConditions(true);
-    };
-
     return (
         <div className="p-4 space-y-6">
             {/* 今日のときめきルート - ヒーローカード */}
@@ -168,7 +163,6 @@ export default function HomePage() {
                     totalTravelTime={todayRoute?.totalTravelTime || 0}
                     shops={todayRoute?.shops || []}
                     onViewRoute={handleViewSchedule}
-                    onRegenerate={handleRegenerate}
                     generating={generating}
                     hasRoute={!!todayRouteId}
                 />
