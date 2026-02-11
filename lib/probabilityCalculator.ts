@@ -82,45 +82,84 @@ export function calculateDiscoveryProbability(input: ProbabilityInput): Probabil
     return getDaysDiff(post) <= 7;
   });
   
-  // 2. 直近2日以内の「目撃」（seen）があれば大幅UP
-  const veryRecentSeen = relevantPosts.filter(p => 
-    getDaysDiff(p) <= 2 && p.status === 'seen'
-  );
+  // 2. 目撃情報を鮮度別に分類
+  const todaySeen = relevantPosts.filter(p => getDaysDiff(p) === 0 && p.status === 'seen');
+  const yesterdaySeen = relevantPosts.filter(p => getDaysDiff(p) === 1 && p.status === 'seen');
+  const twoDaysAgoSeen = relevantPosts.filter(p => getDaysDiff(p) === 2 && p.status === 'seen');
+  const olderSeen = relevantPosts.filter(p => getDaysDiff(p) >= 3 && getDaysDiff(p) <= 7 && p.status === 'seen');
   
-  if (veryRecentSeen.length > 0) {
-    const bonus = 25 + Math.min(veryRecentSeen.length * 5, 15);
+  // 当日の目撃 → 最も価値が高い（+30〜40%）
+  if (todaySeen.length > 0) {
+    const bonus = 30 + Math.min(todaySeen.length * 5, 10);
     probability += bonus;
     factors.push({ 
-      name: '直近目撃', 
+      name: '🔥 本日目撃', 
       value: bonus, 
-      description: `2日以内に${veryRecentSeen.length}件の目撃情報` 
+      description: `今日${todaySeen.length}件の目撃情報！` 
     });
-  } else {
-    // 3-7日前の目撃
-    const recentSeen = relevantPosts.filter(p => 
-      getDaysDiff(p) > 2 && getDaysDiff(p) <= 7 && p.status === 'seen'
-    );
-    if (recentSeen.length > 0) {
-      probability += 15;
-      factors.push({ 
-        name: '週内目撃', 
-        value: 15, 
-        description: `7日以内に${recentSeen.length}件の目撃情報` 
-      });
-    }
+  } 
+  // 1日前の目撃 → まだ可能性あり（+20〜28%）
+  else if (yesterdaySeen.length > 0) {
+    const bonus = 20 + Math.min(yesterdaySeen.length * 4, 8);
+    probability += bonus;
+    factors.push({ 
+      name: '✨ 昨日目撃', 
+      value: bonus, 
+      description: `昨日${yesterdaySeen.length}件の目撃情報` 
+    });
+  }
+  // 2日前の目撃 → 微妙だが参考（+8〜12%）
+  else if (twoDaysAgoSeen.length > 0) {
+    const bonus = 8 + Math.min(twoDaysAgoSeen.length * 2, 4);
+    probability += bonus;
+    factors.push({ 
+      name: '👀 2日前目撃', 
+      value: bonus, 
+      description: `2日前に${twoDaysAgoSeen.length}件の目撃情報` 
+    });
+  }
+  // 3-7日前の目撃 → 参考程度（+5%）
+  else if (olderSeen.length > 0) {
+    probability += 5;
+    factors.push({ 
+      name: '週内目撃', 
+      value: 5, 
+      description: `${olderSeen.length}件の過去目撃情報` 
+    });
   }
   
-  // 3. 売り切れ情報があれば減点
-  const recentSoldout = relevantPosts.filter(p => 
-    getDaysDiff(p) <= 3 && p.status === 'soldout'
-  );
-  if (recentSoldout.length > 0) {
-    const penalty = Math.min(recentSoldout.length * 5, 15);
+  // 3. 売り切れ情報（鮮度に応じて減点）
+  const todaySoldout = relevantPosts.filter(p => getDaysDiff(p) === 0 && p.status === 'soldout');
+  const yesterdaySoldout = relevantPosts.filter(p => getDaysDiff(p) === 1 && p.status === 'soldout');
+  const olderSoldout = relevantPosts.filter(p => getDaysDiff(p) >= 2 && getDaysDiff(p) <= 3 && p.status === 'soldout');
+  
+  // 当日の売り切れ → 厳しい（-20〜25%）
+  if (todaySoldout.length > 0) {
+    const penalty = 20 + Math.min(todaySoldout.length * 5, 5);
     probability -= penalty;
     factors.push({ 
-      name: '売り切れ情報', 
+      name: '❌ 本日売切', 
       value: -penalty, 
-      description: `${recentSoldout.length}件の売り切れ報告` 
+      description: `今日${todaySoldout.length}件の売り切れ報告` 
+    });
+  }
+  // 1日前の売り切れ → 補充されてるかも（-10〜15%）
+  else if (yesterdaySoldout.length > 0) {
+    const penalty = 10 + Math.min(yesterdaySoldout.length * 3, 5);
+    probability -= penalty;
+    factors.push({ 
+      name: '⚠️ 昨日売切', 
+      value: -penalty, 
+      description: `昨日${yesterdaySoldout.length}件の売り切れ報告` 
+    });
+  }
+  // 2-3日前の売り切れ → 補充済みかも（-5%）
+  else if (olderSoldout.length > 0) {
+    probability -= 5;
+    factors.push({ 
+      name: '過去売切', 
+      value: -5, 
+      description: `${olderSoldout.length}件の過去売り切れ` 
     });
   }
   
@@ -182,24 +221,26 @@ export function calculateDiscoveryProbability(input: ProbabilityInput): Probabil
     });
   }
   
-  // 範囲を 10〜95% に制限
-  probability = Math.max(10, Math.min(95, Math.round(probability)));
+  // 範囲を 30〜85% に制限
+  // 下限30%: 「運が良ければ見つかるかも」という期待を維持
+  // 上限85%: 期待値が上がりすぎないようコントロール
+  probability = Math.max(30, Math.min(85, Math.round(probability)));
   
-  // レベル判定
+  // レベル判定（30〜85%の範囲に合わせて閾値調整）
   let level: ProbabilityResult['level'];
   let emoji: string;
   
-  if (probability >= 80) {
-    level = 'hot';
+  if (probability >= 70) {
+    level = 'hot';      // 70-85%: 激アツ！
     emoji = '🔥';
-  } else if (probability >= 60) {
-    level = 'high';
+  } else if (probability >= 55) {
+    level = 'high';     // 55-69%: 期待大
     emoji = '✨';
-  } else if (probability >= 40) {
-    level = 'medium';
+  } else if (probability >= 42) {
+    level = 'medium';   // 42-54%: まあまあ
     emoji = '👀';
   } else {
-    level = 'low';
+    level = 'low';      // 30-41%: 運次第
     emoji = '🍀';
   }
   
