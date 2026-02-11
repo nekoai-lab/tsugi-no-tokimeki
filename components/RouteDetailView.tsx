@@ -1,9 +1,10 @@
 "use client";
 
 import React from 'react';
-import { ArrowLeft, MapPin, Clock, RefreshCw } from 'lucide-react';
+import { ArrowLeft, MapPin, Clock, RefreshCw, ExternalLink } from 'lucide-react';
 import type { RouteProposal } from '@/lib/types';
 import { WEEKDAYS } from '@/lib/utils';
+import { generateGoogleMapsUrl } from '@/lib/googleMaps';
 
 interface RouteDetailViewProps {
     proposal: RouteProposal;
@@ -141,30 +142,33 @@ export default function RouteDetailView({
                 </div>
             </div>
 
-            {/* Confirm Button */}
-            {onConfirm && (
-                <div className="p-4 border-t border-gray-100">
+            {/* Action Buttons */}
+            <div className="p-4 border-t border-gray-100 space-y-3">
+                {/* Googleマップで開くボタン - Primary */}
+                {proposal.shops.length > 0 && (
+                    <a
+                        href={generateGoogleMapsUrl(proposal.shops)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-md"
+                    >
+                        <ExternalLink className="w-4 h-4" />
+                        Googleマップで開く
+                    </a>
+                )}
+
+                {/* Confirm Button */}
+                {onConfirm && (
                     <button
                         onClick={onConfirm}
-                        className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 mb-3"
+                        className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
                     >
                         ✓ このルートで行く
                     </button>
-                    {onRegenerate && (
-                        <button
-                            onClick={onRegenerate}
-                            className="w-full bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
-                        >
-                            <RefreshCw className="w-4 h-4" />
-                            このルートを再生成する
-                        </button>
-                    )}
-                </div>
-            )}
+                )}
 
-            {/* Regenerate Button (standalone if no confirm) */}
-            {!onConfirm && onRegenerate && (
-                <div className="p-4 border-t border-gray-100">
+                {/* Regenerate Button */}
+                {onRegenerate && (
                     <button
                         onClick={onRegenerate}
                         className="w-full bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
@@ -172,8 +176,8 @@ export default function RouteDetailView({
                         <RefreshCw className="w-4 h-4" />
                         このルートを再生成する
                     </button>
-                </div>
-            )}
+                )}
+            </div>
         </div>
     );
 }

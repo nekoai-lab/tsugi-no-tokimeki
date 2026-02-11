@@ -7,29 +7,19 @@ import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db, appId } from '@/lib/firebase';
 import { getRouteProposalByDate, saveRouteProposal } from '@/lib/routeProposalService';
 import { subscribeStickerAlbumPosts } from '@/lib/stickerAlbumService';
-import { STICKER_TYPES, CHARACTERS, PREFERRED_SHOPS, AREAS } from '@/lib/utils';
-import { Route, ChevronRight, Clock, Loader2 } from 'lucide-react';
-import ProfileEditModal from '@/components/ProfileEditModal';
-import TimeEditModal from '@/components/TimeEditModal';
 import StickerPostHorizontalList from '@/components/StickerPostHorizontalList';
-import type { StickerAlbumPost } from '@/lib/types';
-
-function formatDisplayList(items: string[], max = 3): string {
-    if (!items || items.length === 0) return '未設定';
-    if (items.length <= max) return items.join('、');
-    return `${items.slice(0, max).join('、')} 他${items.length - max}件`;
-}
+import TodayRouteHeroCard from '@/components/TodayRouteHeroCard';
+import ConditionSummaryCard from '@/components/ConditionSummaryCard';
+import ConditionEditModal, { type ConditionData } from '@/components/ConditionEditModal';
+import type { StickerAlbumPost, RouteProposal } from '@/lib/types';
 
 export default function HomePage() {
     const router = useRouter();
     const { userProfile, user, posts } = useApp();
-    const [editingArea, setEditingArea] = useState(false);
-    const [editingCharacter, setEditingCharacter] = useState(false);
-    const [editingShops, setEditingShops] = useState(false);
-    const [editingStickerTypes, setEditingStickerTypes] = useState(false);
-    const [editingTime, setEditingTime] = useState(false);
+    const [editingConditions, setEditingConditions] = useState(false);
     const [generating, setGenerating] = useState(false);
     const [todayRouteId, setTodayRouteId] = useState<string | null>(null);
+    const [todayRoute, setTodayRoute] = useState<RouteProposal | null>(null);
     const [stickerPosts, setStickerPosts] = useState<StickerAlbumPost[]>([]);
     const generationStarted = useRef(false);
 
@@ -55,6 +45,7 @@ export default function HomePage() {
 
             if (todayRoute) {
                 setTodayRouteId(todayRoute.id);
+                setTodayRoute(todayRoute);
                 return;
             }
 
@@ -100,7 +91,7 @@ export default function HomePage() {
 
                 const data = await response.json();
 
-                const proposalId = await saveRouteProposal(user.uid, {
+                const newProposal = {
                     date: today,
                     areas,
                     stickerType: userProfile.preferredStickerTypes?.[0] || '',
@@ -111,9 +102,17 @@ export default function HomePage() {
                     shops: data.shops || [],
                     totalTravelTime: data.totalTravelTime || 0,
                     supplementaryInfo: data.supplementaryInfo,
-                });
+                };
+
+                const proposalId = await saveRouteProposal(user.uid, newProposal);
 
                 setTodayRouteId(proposalId);
+                setTodayRoute({
+                    id: proposalId,
+                    userId: user.uid,
+                    confirmed: false,
+                    ...newProposal,
+                });
             } catch (error) {
                 console.error('Route generation error:', error);
             } finally {
@@ -133,49 +132,18 @@ export default function HomePage() {
         return () => unsubscribe();
     }, []);
 
-    const handleSaveAreas = async (selected: string[]) => {
+    // 全条件を一括保存
+    const handleSaveConditions = async (data: ConditionData) => {
         if (!user) return;
         const profileRef = doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'main');
         await setDoc(profileRef, {
-            areas: selected,
-            area: selected[0] || '',
-            updatedAt: serverTimestamp(),
-        }, { merge: true });
-    };
-
-    const handleSaveCharacters = async (selected: string[]) => {
-        if (!user) return;
-        const profileRef = doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'main');
-        await setDoc(profileRef, {
-            favorites: selected,
-            updatedAt: serverTimestamp(),
-        }, { merge: true });
-    };
-
-    const handleSaveShops = async (selected: string[]) => {
-        if (!user) return;
-        const profileRef = doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'main');
-        await setDoc(profileRef, {
-            preferredShops: selected,
-            updatedAt: serverTimestamp(),
-        }, { merge: true });
-    };
-
-    const handleSaveStickerTypes = async (selected: string[]) => {
-        if (!user) return;
-        const profileRef = doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'main');
-        await setDoc(profileRef, {
-            preferredStickerTypes: selected,
-            updatedAt: serverTimestamp(),
-        }, { merge: true });
-    };
-
-    const handleSaveTime = async (startTime: string, endTime: string) => {
-        if (!user) return;
-        const profileRef = doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'main');
-        await setDoc(profileRef, {
-            startTime,
-            endTime,
+            favorites: data.characters,
+            areas: data.areas,
+            area: data.areas[0] || '',
+            preferredShops: data.shops,
+            preferredStickerTypes: data.stickerTypes,
+            startTime: data.startTime,
+            endTime: data.endTime,
             updatedAt: serverTimestamp(),
         }, { merge: true });
     };
@@ -186,175 +154,57 @@ export default function HomePage() {
         }
     };
 
-    const timeDisplay = currentStartTime && currentEndTime
-        ? `${currentStartTime}〜${currentEndTime}`
-        : '未設定';
+    // 再生成ハンドラー（設定条件の編集モーダルを開く）
+    const handleRegenerate = () => {
+        setEditingConditions(true);
+    };
 
     return (
         <div className="p-4 space-y-6">
+            {/* 今日のときめきルート - ヒーローカード */}
+            <section>
+                <TodayRouteHeroCard
+                    areas={todayRoute?.areas || currentAreas}
+                    totalTravelTime={todayRoute?.totalTravelTime || 0}
+                    shops={todayRoute?.shops || []}
+                    onViewRoute={handleViewSchedule}
+                    onRegenerate={handleRegenerate}
+                    generating={generating}
+                    hasRoute={!!todayRouteId}
+                />
+            </section>
+
             {/* シール帳の最新投稿 */}
             <section>
                 <StickerPostHorizontalList posts={stickerPosts} />
             </section>
 
-            {/* Route Proposal Button */}
+            {/* 設定中の条件 - コンパクトカード */}
             <section>
-                <button
-                    onClick={handleViewSchedule}
-                    disabled={generating || !todayRouteId}
-                    className="w-full bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-bold py-4 px-6 rounded-2xl shadow-lg transition-all transform hover:scale-[1.02] flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:scale-100"
-                >
-                    {generating ? (
-                        <>
-                            <Loader2 className="w-5 h-5 animate-spin" />
-                            AIがスケジュールを生成中...
-                        </>
-                    ) : todayRouteId ? (
-                        <>
-                            <Route className="w-5 h-5" />
-                            AIの提案したスケジュールを見る
-                        </>
-                    ) : (
-                        <>
-                            <Route className="w-5 h-5" />
-                            スケジュール準備中...
-                        </>
-                    )}
-                </button>
+                <ConditionSummaryCard
+                    characters={currentCharacters}
+                    areas={currentAreas}
+                    shops={currentShops}
+                    stickerTypes={currentStickerTypes}
+                    startTime={currentStartTime}
+                    endTime={currentEndTime}
+                    onEdit={() => setEditingConditions(true)}
+                />
             </section>
 
-            {/* 設定中の条件 */}
-            <section>
-                <h3 className="text-sm font-bold text-gray-500 mb-3 border-b pb-1">設定中の条件</h3>
-                <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-                    <button
-                        onClick={() => setEditingArea(true)}
-                        className="w-full p-3 border-b border-gray-50 flex justify-between items-center hover:bg-gray-50 transition-colors"
-                    >
-                        <div className="text-left">
-                            <span className="text-sm text-gray-600">エリア</span>
-                            <p className="text-sm font-bold text-gray-900 mt-0.5">
-                                {formatDisplayList(currentAreas)}
-                            </p>
-                        </div>
-                        <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                    </button>
-                    <button
-                        onClick={() => setEditingCharacter(true)}
-                        className="w-full p-3 border-b border-gray-50 hover:bg-gray-50 transition-colors"
-                    >
-                        <div className="flex justify-between items-start">
-                            <div className="text-left flex-1">
-                                <span className="text-sm text-gray-600 block mb-2">お気に入りキャラ</span>
-                                <div className="flex flex-wrap gap-1">
-                                    {currentCharacters.length > 0 ? (
-                                        currentCharacters.map(f => (
-                                            <span key={f} className="text-xs bg-pink-50 text-pink-600 px-2 py-1 rounded-md">{f}</span>
-                                        ))
-                                    ) : (
-                                        <span className="text-sm text-gray-400">未設定</span>
-                                    )}
-                                </div>
-                            </div>
-                            <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0 mt-1" />
-                        </div>
-                    </button>
-                    <button
-                        onClick={() => setEditingShops(true)}
-                        className="w-full p-3 border-b border-gray-50 hover:bg-gray-50 transition-colors"
-                    >
-                        <div className="flex justify-between items-start">
-                            <div className="text-left flex-1">
-                                <span className="text-sm text-gray-600 block mb-2">よく行くお店</span>
-                                <div className="flex flex-wrap gap-1">
-                                    {currentShops.length > 0 ? (
-                                        currentShops.map(s => (
-                                            <span key={s} className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded-md">{s}</span>
-                                        ))
-                                    ) : (
-                                        <span className="text-sm text-gray-400">未設定</span>
-                                    )}
-                                </div>
-                            </div>
-                            <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0 mt-1" />
-                        </div>
-                    </button>
-                    <button
-                        onClick={() => setEditingStickerTypes(true)}
-                        className="w-full p-3 border-b border-gray-50 hover:bg-gray-50 transition-colors"
-                    >
-                        <div className="flex justify-between items-start">
-                            <div className="text-left flex-1">
-                                <span className="text-sm text-gray-600 block mb-2">欲しいシールの種類</span>
-                                <div className="flex flex-wrap gap-1">
-                                    {currentStickerTypes.length > 0 ? (
-                                        currentStickerTypes.map(t => (
-                                            <span key={t} className="text-xs bg-purple-50 text-purple-600 px-2 py-1 rounded-md">{t}</span>
-                                        ))
-                                    ) : (
-                                        <span className="text-sm text-gray-400">未設定</span>
-                                    )}
-                                </div>
-                            </div>
-                            <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0 mt-1" />
-                        </div>
-                    </button>
-                    <button
-                        onClick={() => setEditingTime(true)}
-                        className="w-full p-3 hover:bg-gray-50 transition-colors"
-                    >
-                        <div className="flex justify-between items-center">
-                            <div className="text-left">
-                                <span className="text-sm text-gray-600">指定時間</span>
-                                <p className="text-sm font-bold text-gray-900 mt-0.5 flex items-center gap-1">
-                                    <Clock className="w-3.5 h-3.5 text-gray-400" />
-                                    {timeDisplay}
-                                </p>
-                            </div>
-                            <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                        </div>
-                    </button>
-                </div>
-            </section>
-
-            <ProfileEditModal
-                isOpen={editingArea}
-                onClose={() => setEditingArea(false)}
-                onSave={handleSaveAreas}
-                title="エリアを選択"
-                options={AREAS}
-                initialSelected={currentAreas}
-            />
-            <ProfileEditModal
-                isOpen={editingCharacter}
-                onClose={() => setEditingCharacter(false)}
-                onSave={handleSaveCharacters}
-                title="お気に入りキャラを選択"
-                options={CHARACTERS}
-                initialSelected={currentCharacters}
-            />
-            <ProfileEditModal
-                isOpen={editingShops}
-                onClose={() => setEditingShops(false)}
-                onSave={handleSaveShops}
-                title="よく行くお店を選択"
-                options={PREFERRED_SHOPS}
-                initialSelected={currentShops}
-            />
-            <ProfileEditModal
-                isOpen={editingStickerTypes}
-                onClose={() => setEditingStickerTypes(false)}
-                onSave={handleSaveStickerTypes}
-                title="欲しいシールの種類を選択"
-                options={STICKER_TYPES}
-                initialSelected={currentStickerTypes}
-            />
-            <TimeEditModal
-                isOpen={editingTime}
-                onClose={() => setEditingTime(false)}
-                onSave={handleSaveTime}
-                initialStartTime={currentStartTime}
-                initialEndTime={currentEndTime}
+            {/* 条件編集モーダル */}
+            <ConditionEditModal
+                isOpen={editingConditions}
+                onClose={() => setEditingConditions(false)}
+                onSave={handleSaveConditions}
+                initialData={{
+                    characters: currentCharacters,
+                    areas: currentAreas,
+                    shops: currentShops,
+                    stickerTypes: currentStickerTypes,
+                    startTime: currentStartTime,
+                    endTime: currentEndTime,
+                }}
             />
         </div>
     );
