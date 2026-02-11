@@ -189,7 +189,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   // LINE連携チェック - ユーザー認証後にLIFFを初期化し、LINEログイン済みなら自動連携
   useEffect(() => {
-    if (!user || lineLinkCheckedRef.current) return;
+    if (!user) return;
+    
+    // URLにLIFF関連のパラメータがある場合は、LINE認証から戻ってきた可能性がある
+    const hasLiffParams = typeof window !== 'undefined' && (
+      window.location.search.includes('liff.state') ||
+      window.location.search.includes('code=') ||
+      window.location.hash.includes('access_token')
+    );
+    
+    // LIFF関連パラメータがある場合はフラグをリセットして再チェック
+    if (hasLiffParams) {
+      console.log('📱 [LINE] Detected LIFF params in URL, forcing re-check');
+      lineLinkCheckedRef.current = false;
+    }
+    
+    if (lineLinkCheckedRef.current) return;
     
     // 即座にフラグを立てて多重実行を防止
     lineLinkCheckedRef.current = true;
@@ -201,7 +216,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         // LIFF初期化（タイムアウト付き）
         const initPromise = initializeLiff();
         const timeoutPromise = new Promise<boolean>((resolve) => 
-          setTimeout(() => resolve(false), 5000)
+          setTimeout(() => resolve(false), 8000) // 8秒に延長
         );
         
         const initialized = await Promise.race([initPromise, timeoutPromise]);
@@ -226,9 +241,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         console.log('📱 [LINE] LINE logged in, userId:', lineProfile.userId.slice(0, 8) + '...');
         
         // LINE連携を実行（バックグラウンドで、UIをブロックしない）
-        linkLineAccount(user.uid, lineProfile.userId, lineProfile.displayName)
-          .then(() => console.log('📱 [LINE] LINE account linked successfully'))
-          .catch((err) => console.error('📱 [LINE] Link error:', err));
+        try {
+          await linkLineAccount(user.uid, lineProfile.userId, lineProfile.displayName);
+          console.log('📱 [LINE] LINE account linked successfully');
+          
+          // URLからLIFFパラメータをクリーンアップ（履歴を置き換え）
+          if (hasLiffParams && typeof window !== 'undefined') {
+            const cleanUrl = window.location.origin + window.location.pathname;
+            window.history.replaceState({}, '', cleanUrl);
+            console.log('📱 [LINE] Cleaned up LIFF params from URL');
+          }
+        } catch (err) {
+          console.error('📱 [LINE] Link error:', err);
+        }
         
       } catch (error) {
         console.error('📱 [LINE] Error checking LINE link:', error);
@@ -248,20 +273,24 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       // LIFF初期化（タイムアウト付き）
       const initPromise = initializeLiff();
       const timeoutPromise = new Promise<boolean>((resolve) => 
-        setTimeout(() => resolve(false), 5000)
+        setTimeout(() => resolve(false), 8000) // 8秒に延長
       );
       
       const initialized = await Promise.race([initPromise, timeoutPromise]);
       if (!initialized) {
         alert('LINE連携の初期化に失敗しました。再度お試しください。');
+        setIsLinkingLine(false);
         return;
       }
       
       // LINEログイン済みかチェック
       if (!isLineLoggedIn()) {
         // LINEログインページにリダイレクト
+        // 現在のURLをリダイレクト先として指定（戻ってきた際に連携処理を続行）
         const liff = await import('@line/liff').then(m => m.default);
-        liff.login();
+        const currentUrl = window.location.origin + '/home';
+        console.log('📱 [LINE] Redirecting to LINE login, will return to:', currentUrl);
+        liff.login({ redirectUri: currentUrl });
         return; // リダイレクトされるので、ここで終了
       }
       
@@ -269,6 +298,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const lineProfile = await getLineProfile();
       if (!lineProfile) {
         alert('LINEプロフィールの取得に失敗しました');
+        setIsLinkingLine(false);
         return;
       }
       
