@@ -768,6 +768,45 @@ Authorization: Bearer {CRON_SECRET}
 
 ---
 
+## 🔒 セキュリティ
+
+### 現状（ハッカソン版）
+
+| 項目 | 状態 | 備考 |
+|-----|------|------|
+| API キー | ✅ 環境変数で管理 | Secret Manager 使用 |
+| Firestore ルール | ⚠️ 簡易版 | 認証済みユーザーのみアクセス可 |
+| Storage ルール | ✅ 適切 | 自分のファイルのみ書き込み可 |
+| API エンドポイント | ⚠️ 一部認証なし | Cloud Scheduler は CRON_SECRET で保護 |
+
+### 本番運用前に強化予定
+
+1. **Firestore ルールの細分化**
+   - 自分のプロフィールのみ編集可能
+   - 投稿は作成者のみ編集・削除可能
+   
+   ```javascript
+   // 改善版ルール例
+   match /artifacts/{appId}/users/{userId}/profile/{docId} {
+     allow read, write: if request.auth.uid == userId;
+   }
+   
+   match /artifacts/{appId}/public/data/posts/{postId} {
+     allow read: if request.auth != null;
+     allow create: if request.auth != null;
+     allow update, delete: if resource.data.uid == request.auth.uid;
+   }
+   ```
+
+2. **API レート制限**
+   - Vertex AI 呼び出しにレート制限を追加
+   - Cloud Armor の導入検討
+
+3. **監査ログ**
+   - 重要な操作のログ記録
+
+---
+
 ## 🛡️ License & Credit
 
 - **Development**: [yumemiru-masomi](https://github.com/yumemiru-masomi) × [nekoai-lab](https://github.com/nekoai-lab)
