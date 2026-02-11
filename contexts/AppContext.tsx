@@ -191,14 +191,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!user || lineLinkCheckedRef.current) return;
     
+    // 即座にフラグを立てて多重実行を防止
+    lineLinkCheckedRef.current = true;
+    
     const checkLineLink = async () => {
       try {
         console.log('📱 [LINE] Checking LINE link status...');
         
-        // LIFF初期化
-        const initialized = await initializeLiff();
+        // LIFF初期化（タイムアウト付き）
+        const initPromise = initializeLiff();
+        const timeoutPromise = new Promise<boolean>((resolve) => 
+          setTimeout(() => resolve(false), 5000)
+        );
+        
+        const initialized = await Promise.race([initPromise, timeoutPromise]);
         if (!initialized) {
-          console.log('📱 [LINE] LIFF initialization failed, skipping');
+          console.log('📱 [LINE] LIFF initialization failed or timeout, skipping');
           return;
         }
         
@@ -217,24 +225,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         
         console.log('📱 [LINE] LINE logged in, userId:', lineProfile.userId.slice(0, 8) + '...');
         
-        // 現在のプロフィールにlineUserIdがあるかチェック
-        // (userProfileはstateなので、この時点ではまだnullの可能性がある)
-        // → linkLineAccount内で自動的に処理される
-        
-        // LINE連携を実行
-        await linkLineAccount(user.uid, lineProfile.userId, lineProfile.displayName);
-        console.log('📱 [LINE] LINE account linked successfully');
+        // LINE連携を実行（バックグラウンドで、UIをブロックしない）
+        linkLineAccount(user.uid, lineProfile.userId, lineProfile.displayName)
+          .then(() => console.log('📱 [LINE] LINE account linked successfully'))
+          .catch((err) => console.error('📱 [LINE] Link error:', err));
         
       } catch (error) {
         console.error('📱 [LINE] Error checking LINE link:', error);
-      } finally {
-        lineLinkCheckedRef.current = true;
       }
     };
     
-    // 少し遅延させて実行（プロフィール読み込みを待つ）
-    const timer = setTimeout(checkLineLink, 500);
-    return () => clearTimeout(timer);
+    // 遅延なしで即座に実行
+    checkLineLink();
   }, [user]);
 
   // 手動でLINE連携を実行（プロフィール画面から呼び出し）
@@ -243,10 +245,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     
     setIsLinkingLine(true);
     try {
-      // LIFF初期化
-      const initialized = await initializeLiff();
+      // LIFF初期化（タイムアウト付き）
+      const initPromise = initializeLiff();
+      const timeoutPromise = new Promise<boolean>((resolve) => 
+        setTimeout(() => resolve(false), 5000)
+      );
+      
+      const initialized = await Promise.race([initPromise, timeoutPromise]);
       if (!initialized) {
-        alert('LINE連携の初期化に失敗しました');
+        alert('LINE連携の初期化に失敗しました。再度お試しください。');
         return;
       }
       
