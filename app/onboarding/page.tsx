@@ -66,11 +66,18 @@ function OnboardingContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
 
-    // URLパラメータから初期ステップを取得（LINE友達登録後の復帰用）
-    // LIFF endpoint は step=5 で戻ってくる（外部設定のため変更不可）
-    // 内部的に確認画面（CONFIRM_STEP）にマッピングし、自動保存＆遷移
+    // URLパラメータから初期ステップを取得
     const urlStep = searchParams.get('step');
-    const initialStep = urlStep === '5' ? CONFIRM_STEP : parseInt(urlStep || '1');
+    
+    // LIFF からの戻りを検出（liff.state, code, state などのパラメータがある）
+    const isLiffReturn = typeof window !== 'undefined' && (
+        window.location.search.includes('liff.state') ||
+        window.location.search.includes('code=') ||
+        window.location.search.includes('liffClientId')
+    );
+    
+    // step=5 または LIFF return の場合は確認画面へ
+    const initialStep = (urlStep === '5' || isLiffReturn) ? CONFIRM_STEP : parseInt(urlStep || '1');
     const [step, setStep] = useState(initialStep);
 
     // スライダー用の状態
@@ -182,10 +189,16 @@ function OnboardingContent() {
         const initLiff = async () => {
             console.log('🔵 [LIFF] Starting initialization...');
 
-            // step=5 の場合は LIFF 経由で戻ってきた可能性が高い
+            // LIFF 経由で戻ってきた場合（step=5 または liff params がある）
             // リダイレクトループを防ぐため、lineUserId取得のみ行い、stepは変更しない
-            if (urlStep === '5') {
-                console.log('🔵 [LIFF] step=5 detected (LIFF return), simplified init to prevent loop');
+            const isFromLiff = urlStep === '5' || (typeof window !== 'undefined' && (
+                window.location.search.includes('liff.state') ||
+                window.location.search.includes('code=') ||
+                window.location.search.includes('liffClientId')
+            ));
+            
+            if (isFromLiff) {
+                console.log('🔵 [LIFF] LIFF return detected, simplified init to prevent loop');
                 try {
                     const initialized = await initializeLiff();
                     setLiffInitialized(initialized);
@@ -322,7 +335,8 @@ function OnboardingContent() {
         if (step !== CONFIRM_STEP || !user) return;
 
         // 既存ユーザーの LIFF return: lineUserId のみ追記保存
-        if (urlStep === '5' && userProfile) {
+        const isFromLiffConfirm = urlStep === '5' || isLiffReturn;
+        if (isFromLiffConfirm && userProfile) {
             if (!lineUserId) {
                 // LIFF init 完了を待つ（タイムアウト: 8秒で /home へ）
                 const fallback = setTimeout(() => {
@@ -347,7 +361,7 @@ function OnboardingContent() {
         }
 
         // 新規ユーザーの LIFF return: lineUserId 取得を待ってからフル保存
-        if (urlStep === '5' && !lineUserId) {
+        if (isFromLiffConfirm && !lineUserId) {
             const fallback = setTimeout(() => {
                 saveProfile();
             }, 8000);
@@ -375,11 +389,12 @@ function OnboardingContent() {
         setStep(CONFIRM_STEP);
     };
 
-    // step=5 で戻ってきた場合、loading が長く続いたら強制的に /home へ
+    // LIFF return で戻ってきた場合、loading が長く続いたら強制的に /home へ
     useEffect(() => {
-        if (urlStep === '5' && loading) {
+        const isFromLiffTimeout = urlStep === '5' || isLiffReturn;
+        if (isFromLiffTimeout && loading) {
             const timeout = setTimeout(() => {
-                console.log('🔵 [Onboarding] Loading timeout on step=5, forcing redirect to /home');
+                console.log('🔵 [Onboarding] Loading timeout on LIFF return, forcing redirect to /home');
                 router.push('/home');
             }, 5000); // 5秒でタイムアウト
             return () => clearTimeout(timeout);

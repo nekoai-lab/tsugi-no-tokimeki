@@ -288,7 +288,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         // LINEログインページにリダイレクト
         // redirectUri は LIFFエンドポイントURL と同じパスにする必要がある
         const liff = await import('@line/liff').then(m => m.default);
-        const redirectUrl = window.location.origin + '/onboarding?step=5';
+        const redirectUrl = window.location.origin + '/onboarding';
         console.log('📱 [LINE] Redirecting to LINE login, will return to:', redirectUrl);
         liff.login({ redirectUri: redirectUrl });
         return; // リダイレクトされるので、ここで終了
