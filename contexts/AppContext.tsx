@@ -286,11 +286,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       // LINEログイン済みかチェック
       if (!isLineLoggedIn()) {
         // LINEログインページにリダイレクト
-        // 現在のURLをリダイレクト先として指定（戻ってきた際に連携処理を続行）
+        // redirectUri は LIFFエンドポイントURL と同じパスにする必要がある
         const liff = await import('@line/liff').then(m => m.default);
-        const currentUrl = window.location.origin + '/home';
-        console.log('📱 [LINE] Redirecting to LINE login, will return to:', currentUrl);
-        liff.login({ redirectUri: currentUrl });
+        const redirectUrl = window.location.origin + '/onboarding?step=5';
+        console.log('📱 [LINE] Redirecting to LINE login, will return to:', redirectUrl);
+        liff.login({ redirectUri: redirectUrl });
         return; // リダイレクトされるので、ここで終了
       }
       
