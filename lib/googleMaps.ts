@@ -4,22 +4,57 @@
  * スポット配列からGoogle Maps Directions URLを生成する
  * - スポット名の正規化（"渋谷×ロフト" → "渋谷 ロフト, Japan"）
  * - 8件超は先頭8件に丸める（URLの安定性のため）
- * - travelmode=walking固定
+ * - 電車移動がある場合は transit モード、なければ walking モード
  */
+
+import { findShopByName, getShopGoogleQuery } from './data/shopMaster';
+import { needsTrain } from './data/stationMaster';
 
 interface SpotLike {
   name: string;
+  travelMode?: 'walk' | 'train';  // 移動手段（AIが出力）
 }
 
 /**
  * スポット名を正規化
  * "渋谷×ロフト" → "渋谷 ロフト, Japan"
+ * 
+ * 店舗マスターにある場合はGoogle検索用クエリを使用
  */
 function normalizeSpotName(name: string): string {
+  // 店舗マスターから検索用クエリを取得
+  const masterQuery = getShopGoogleQuery(name);
+  if (masterQuery !== `${name}, Japan`) {
+    return masterQuery;
+  }
+  
+  // マスターにない場合は従来の正規化
   return name
     .replace(/[×xX*＊]/g, ' ')  // ×, x, X, *, ＊ をスペースに
     .replace(/\s+/g, ' ')       // 連続する空白を1つに
     .trim() + ', Japan';
+}
+
+/**
+ * ルートに電車移動が含まれるかどうかを判定
+ */
+function hasTrainTransit(shops: SpotLike[]): boolean {
+  // 明示的にtrainが指定されている場合
+  if (shops.some(s => s.travelMode === 'train')) {
+    return true;
+  }
+  
+  // 店舗マスターからエリアを取得して判定
+  for (let i = 0; i < shops.length - 1; i++) {
+    const shop1 = findShopByName(shops[i].name);
+    const shop2 = findShopByName(shops[i + 1].name);
+    
+    if (shop1 && shop2 && needsTrain(shop1.area, shop2.area)) {
+      return true;
+    }
+  }
+  
+  return false;
 }
 
 /**
@@ -34,7 +69,7 @@ function normalizeSpotName(name: string): string {
  *   { name: '新宿×東急ハンズ' },
  *   { name: '池袋×サンシャイン' }
  * ]);
- * // => "https://www.google.com/maps/dir/?api=1&destination=池袋 サンシャイン, Japan&waypoints=渋谷 ロフト, Japan|新宿 東急ハンズ, Japan&travelmode=walking"
+ * // => "https://www.google.com/maps/dir/?api=1&destination=池袋 サンシャイン, Japan&waypoints=渋谷 ロフト, Japan|新宿 東急ハンズ, Japan&travelmode=transit"
  */
 export function generateGoogleMapsUrl(shops: SpotLike[]): string {
   if (!shops || shops.length === 0) {
@@ -56,8 +91,11 @@ export function generateGoogleMapsUrl(shops: SpotLike[]): string {
     .map(w => encodeURIComponent(w))
     .join('|');
 
+  // 電車移動があるかどうかで travelmode を切り替え
+  const travelMode = hasTrainTransit(shops) ? 'transit' : 'walking';
+
   // URL組み立て
-  let url = `https://www.google.com/maps/dir/?api=1&destination=${destination}&travelmode=walking`;
+  let url = `https://www.google.com/maps/dir/?api=1&destination=${destination}&travelmode=${travelMode}`;
 
   if (waypoints) {
     url += `&waypoints=${waypoints}`;
@@ -96,4 +134,5 @@ export function generateRouteOverview(shops: SpotLike[], maxLength = 3): string 
   const remaining = shortNames.length - maxLength;
   return `${displayed.join(' → ')} 他${remaining}件`;
 }
+
 

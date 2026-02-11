@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { VertexAI } from '@google-cloud/vertexai';
 import type { Shop } from '@/lib/types';
+import { SHOP_MASTER, getShopsByArea } from '@/lib/data/shopMaster';
+import { generateTravelTimePrompt, getAreaTravelTime } from '@/lib/data/stationMaster';
 
 interface RouteProposalRequest {
   userId: string;
@@ -52,7 +54,7 @@ const SYSTEM_INSTRUCTION_INITIAL = `あなたはシールを探すユーザー�
 【店舗提案の重要ルール】
 - ユーザーが「特に回りたいお店」を指定している場合、それらは優先的にルートに含めてください
 - ただし、指定されたお店だけでなく、以下も積極的に提案してください：
-  * そのエリアでシールを扱っている人気店・定番店（LOFT、東急ハンズ、ドン・キホーテ、ヴィレッジヴァンガード、アニメイトなど）
+  * そのエリアでシールを扱っている人気店・定番店（LOFT、ハンズ、ドン・キホーテ、ヴィレッジヴァンガード、アニメイト、キデイランドなど）
   * 過去に目撃情報があった店舗
   * キャラクターグッズを扱っている専門店
 - 指定時間内に効率よく回れる店舗数を提案してください（目安：2時間で2-3店舗、4時間で4-6店舗）
@@ -65,8 +67,24 @@ const SYSTEM_INSTRUCTION_INITIAL = `あなたはシールを探すユーザー�
 - お昼・お茶・夜ご飯の提案では、そのエリアで人気のお店やおすすめのカフェ・レストランを提案してください
 - 過去の情報を元に、根拠があればそれを提示できるときはしてください
   例)1月22日にたまごっちのボンボンドロップシールが発売されていたので、入荷される可能性はありますが、直近1ヶ月以内で入荷してるので確率は低いです
-- 駅を跨ぐ場合は電車の利用をしてください。駅間の分数も書いてください
-- 同じエリア内は徒歩移動を基本とし、5-10分程度の移動時間を見積もってください
+
+【移動時間のルール - 重要：以下の時間を厳守】
+- 同じエリア内の移動: 徒歩 5-10分（travelMode: "walk"）
+- 異なるエリア間の移動: 電車利用（travelMode: "train"）
+- 駅間移動時間（電車）:
+  * 新宿⇔渋谷: 7分
+  * 新宿⇔池袋: 5分
+  * 新宿⇔原宿: 4分
+  * 渋谷⇔原宿: 3分
+  * 渋谷⇔表参道: 2分
+  * 渋谷⇔池袋: 15分
+  * 渋谷⇔銀座: 15分
+  * 池袋⇔上野: 18分
+  * 上野⇔秋葉原: 4分
+  * 上野⇔浅草: 5分
+  * 秋葉原⇔銀座: 5分
+  * 新宿⇔銀座: 15分
+- 電車移動時間 + 駅から店舗までの徒歩（3-5分）を合計してtravelTimeFromPreviousに設定
 
 【重要】
 レスポンスの最後に、以下の形式でJSON部を必ず出力してください。JSONは \`\`\`json と \`\`\` で囲んでください。
@@ -118,8 +136,24 @@ ${OUTPUT_FORMAT_REGENERATE}
 - お昼・お茶・夜ご飯の提案では、そのエリアで人気のお店やおすすめのカフェ・レストランを提案してください
 - 過去の情報を元に、根拠があればそれを提示できるときはしてください
   例)1月22日にたまごっちのボンボンドロップシールが発売されていたので、入荷される可能性はありますが、直近1ヶ月以内で入荷してるので確率は低いです
-- 駅を跨ぐ場合は電車の利用をしてください。駅間の分数も書いてください
-- 同じエリア内は徒歩移動を基本とし、5-10分程度の移動時間を見積もってください
+
+【移動時間のルール - 重要：以下の時間を厳守】
+- 同じエリア内の移動: 徒歩 5-10分（travelMode: "walk"）
+- 異なるエリア間の移動: 電車利用（travelMode: "train"）
+- 駅間移動時間（電車）:
+  * 新宿⇔渋谷: 7分
+  * 新宿⇔池袋: 5分
+  * 新宿⇔原宿: 4分
+  * 渋谷⇔原宿: 3分
+  * 渋谷⇔表参道: 2分
+  * 渋谷⇔池袋: 15分
+  * 渋谷⇔銀座: 15分
+  * 池袋⇔上野: 18分
+  * 上野⇔秋葉原: 4分
+  * 上野⇔浅草: 5分
+  * 秋葉原⇔銀座: 5分
+  * 新宿⇔銀座: 15分
+- 電車移動時間 + 駅から店舗までの徒歩（3-5分）を合計してtravelTimeFromPreviousに設定
 
 ### 💡 補足情報
 
@@ -181,6 +215,24 @@ function buildUserMessage(body: RouteProposalRequest): string {
   const durationMinutes = calculateDuration();
   const recommendedShops = Math.max(2, Math.floor(durationMinutes / 40)); // 40分/店舗（滞在30分+移動10分）
 
+  // エリア内の利用可能な店舗リストを生成
+  const availableShops = areas.flatMap(area => {
+    const shops = getShopsByArea(area);
+    return shops.map(s => `  - ${s.name}（${s.station}駅 徒歩${s.walkFromStation}分）`);
+  });
+  const shopListText = availableShops.length > 0 
+    ? `【このエリアで利用可能な店舗】\n${availableShops.join('\n')}`
+    : '';
+
+  // エリア間の移動時間を計算
+  const areaTravelTimes = areas.length > 1 
+    ? `【エリア間の移動時間】\n${areas.slice(0, -1).map((from, i) => {
+        const to = areas[i + 1];
+        const time = getAreaTravelTime(from, to);
+        return `  - ${from}⇔${to}: 電車${time}分`;
+      }).join('\n')}`
+    : '';
+
   // 再生成リクエストの場合
   if (existingProposal && modificationRequest) {
     return `以下の既存のルート提案を、ユーザーのリクエストに基づいて修正してください。
@@ -222,17 +274,18 @@ ${recentPosts || '（まだ目撃情報がありません）'}
 - 特に回りたいお店: ${preferredShops.length > 0 ? preferredShops.join('、') : '特になし'}
 - 推奨店舗数: ${recommendedShops}店舗程度（食事・カフェ除く）
 
+${shopListText}
+
+${areaTravelTimes}
+
 【直近の目撃情報】
 ${recentPosts || '（まだ目撃情報がありません）'}
 
 【重要】
+- 上記の「利用可能な店舗」から優先的に選んでください
 - 「特に回りたいお店」が指定されている場合は優先的に含めてください
-- ただし、それだけでなく、${areas.join('、')}エリアでシールを扱っている以下のような店舗も積極的に提案してください：
-  * LOFT、東急ハンズ、ドン・キホーテ、ヴィレッジヴァンガード、アニメイト
-  * 各エリアの駅ビル内のバラエティショップ
-  * 過去に目撃情報があった店舗
+- 移動時間は上記の「エリア間の移動時間」を参照してください
 - 時間内に無理なく回れる効率的なルートを組んでください
-- 移動時間も考慮して、リアルなタイムテーブルを作成してください
 
 この情報をもとに、効率的なルートとタイムテーブルを提案してください！`;
 }
