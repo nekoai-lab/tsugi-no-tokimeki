@@ -15,7 +15,7 @@ import type { StickerAlbumPost, RouteProposal } from '@/lib/types';
 
 export default function HomePage() {
     const router = useRouter();
-    const { userProfile, user, posts } = useApp();
+    const { userProfile, user, posts, setIsModalOpen } = useApp();
     const [editingConditions, setEditingConditions] = useState(false);
     const [generating, setGenerating] = useState(false);
     const [todayRouteId, setTodayRouteId] = useState<string | null>(null);
@@ -187,14 +187,20 @@ export default function HomePage() {
                     stickerTypes={currentStickerTypes}
                     startTime={currentStartTime}
                     endTime={currentEndTime}
-                    onEdit={() => setEditingConditions(true)}
+                    onEdit={() => {
+                        setEditingConditions(true);
+                        setIsModalOpen(true);
+                    }}
                 />
             </section>
 
             {/* 条件編集モーダル */}
             <ConditionEditModal
                 isOpen={editingConditions}
-                onClose={() => setEditingConditions(false)}
+                onClose={() => {
+                    setEditingConditions(false);
+                    setIsModalOpen(false);
+                }}
                 onSave={handleSaveConditions}
                 initialData={{
                     characters: currentCharacters,

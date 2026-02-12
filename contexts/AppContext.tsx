@@ -7,6 +7,7 @@ import { auth, db, appId } from '@/lib/firebase';
 import { linkLineAccount } from '@/lib/userService';
 import { initializeLiff, isLineLoggedIn, getLineProfile } from '@/lib/liff';
 import type { UserProfile, Post, StoreEvent, Suggestion, FirebaseUser } from '@/lib/types';
+import { updateDebugStatus, debugLog } from '@/app/_components/DebugConsole';
 
 interface AppContextType {
   user: FirebaseUser | null;
@@ -50,20 +51,26 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     // 既にリスナーがあれば何もしない（多重登録防止）
     if (authUnsubRef.current) {
       console.log('🔐 [Auth] Listener already exists, skipping setup');
+      debugLog('AUTH', 'Listener already exists, skipping');
       return;
     }
     
     console.log('🔐 [Auth] Setup start');
-    console.log('🔐 [Auth] Debug info:', {
+    debugLog('AUTH', 'Setup start');
+    const debugInfo = {
       hostname: typeof window !== 'undefined' ? window.location.hostname : 'SSR',
       authExists: !!auth,
       authAppName: auth?.app?.name || 'unknown',
-    });
+    };
+    console.log('🔐 [Auth] Debug info:', debugInfo);
+    debugLog('AUTH', 'Debug info', debugInfo);
     
     // タイムアウト設定（保険）
     timeoutRef.current = setTimeout(() => {
       if (!authReadyRef.current) {
         console.error('🔐 [Auth] Timeout after', AUTH_TIMEOUT_MS, 'ms - forcing ready state');
+        debugLog('AUTH', `ERROR: Timeout after ${AUTH_TIMEOUT_MS}ms`);
+        updateDebugStatus({ auth: 'error', errorMessage: 'Auth timeout' });
         authReadyRef.current = true;
         setLoading(false);
       }
@@ -73,10 +80,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const initAuth = async () => {
       try {
         console.log('🔐 [Auth] Starting anonymous auth...');
+        debugLog('AUTH', 'signInAnonymously start');
         await signInAnonymously(auth);
         console.log('🔐 [Auth] Anonymous auth successful');
+        debugLog('AUTH', 'signInAnonymously SUCCESS');
       } catch (error) {
         console.error('🔐 [Auth] Error:', error);
+        debugLog('AUTH', 'ERROR: signInAnonymously failed', error);
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        updateDebugStatus({ auth: 'error', errorMessage: `Auth: ${errorMsg.slice(0, 40)}` });
         // エラー時はタイムアウトをクリアしてready状態に
         if (timeoutRef.current) {
           clearTimeout(timeoutRef.current);
@@ -90,8 +102,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     
     // Auth State Listener
     console.log('🔐 [Auth] Subscribe to onAuthStateChanged');
+    debugLog('AUTH', 'Subscribe to onAuthStateChanged');
     authUnsubRef.current = onAuthStateChanged(auth, (currentUser) => {
       console.log('🔐 [Auth] Callback fired:', currentUser ? `uid=${currentUser.uid.slice(0,8)}...` : 'null');
+      debugLog('AUTH', 'onAuthStateChanged fired', { uid: currentUser?.uid?.slice(0, 8) || 'null' });
       
       // タイムアウトをクリア（listenerが発火したので不要）
       if (timeoutRef.current) {
@@ -105,6 +119,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       
       if (currentUser) {
         setUser({ uid: currentUser.uid });
+        debugLog('AUTH', 'Auth OK, uid set');
+        updateDebugStatus({ auth: 'ok' });
         
         // 既存のProfile listenerがあれば解除
         if (profileUnsubRef.current) {
@@ -113,28 +129,36 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           profileUnsubRef.current = null;
         }
         
-        // Profile listener
+        // Profile listener (これがAPI/Firestore読み込みに相当)
         console.log('🔐 [Profile] Subscribe start');
+        debugLog('API', 'Profile onSnapshot start');
         const profileRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'profile', 'main');
         profileUnsubRef.current = onSnapshot(
           profileRef,
           (docSnap) => {
             console.log('🔐 [Profile] Callback fired:', docSnap.exists() ? 'exists' : 'not exists');
+            debugLog('API', 'Profile onSnapshot callback', { exists: docSnap.exists() });
             if (docSnap.exists()) {
               setUserProfile(docSnap.data() as UserProfile);
             } else {
               setUserProfile(null);
             }
+            updateDebugStatus({ api: 'ok' });
             setLoading(false);
           },
           (error) => {
             console.error('🔐 [Profile] Error:', error);
+            debugLog('API', 'ERROR: Profile onSnapshot failed', error);
+            const errorMsg = error instanceof Error ? error.message : String(error);
+            updateDebugStatus({ api: 'error', errorMessage: `API: ${errorMsg.slice(0, 40)}` });
             setLoading(false);
           }
         );
       } else {
         setUser(null);
         setUserProfile(null);
+        debugLog('AUTH', 'No user, auth null');
+        updateDebugStatus({ auth: 'ok', api: 'skipped' });
         setLoading(false);
       }
     });

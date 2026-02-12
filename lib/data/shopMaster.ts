@@ -333,3 +333,4 @@ export function getShopGoogleQuery(shopName: string): string {
 }
 
 
+

@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AppProvider } from "@/contexts/AppContext";
 import DebugPanel from "@/components/DebugPanel";
+import DebugConsole from "@/app/_components/DebugConsole";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -46,6 +47,7 @@ export default function RootLayout({
         <AppProvider>
           {children}
           <DebugPanel />
+          <DebugConsole />
         </AppProvider>
       </body>
     </html>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { X, Check, ChevronDown, ChevronUp } from 'lucide-react';
 import { CHARACTERS, AREAS, PREFERRED_SHOPS, STICKER_TYPES, TIME_SLOTS } from '@/lib/utils';
 
@@ -94,10 +94,35 @@ export default function ConditionEditModal({
     const [startTime, setStartTime] = useState('10:00');
     const [endTime, setEndTime] = useState('18:00');
     const [saving, setSaving] = useState(false);
+    const [viewportHeight, setViewportHeight] = useState<number | null>(null);
+
+    // ビューポートの高さを動的に取得（LIFF WebView対応）
+    const updateViewportHeight = useCallback(() => {
+        if (typeof window !== 'undefined') {
+            setViewportHeight(window.innerHeight);
+        }
+    }, []);
+
+    useEffect(() => {
+        updateViewportHeight();
+        window.addEventListener('resize', updateViewportHeight);
+        // iOS Safari対応: visualViewportのリサイズも監視
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', updateViewportHeight);
+        }
+        return () => {
+            window.removeEventListener('resize', updateViewportHeight);
+            if (window.visualViewport) {
+                window.visualViewport.removeEventListener('resize', updateViewportHeight);
+            }
+        };
+    }, [updateViewportHeight]);
 
     // 初期データをセット
     useEffect(() => {
         if (isOpen) {
+            // モーダル開いた時に高さを再計算
+            updateViewportHeight();
             setCharacters(initialData.characters || []);
             setAreas(initialData.areas || []);
             setShops(initialData.shops || []);
@@ -137,7 +162,13 @@ export default function ConditionEditModal({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+        <div 
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+            style={{
+                // LIFF WebView対応: 動的にビューポートの高さを使用
+                height: viewportHeight ? `${viewportHeight}px` : '100vh',
+            }}
+        >
             {/* Backdrop */}
             <div
                 className="absolute inset-0 bg-black/50"
@@ -145,9 +176,17 @@ export default function ConditionEditModal({
             />
 
             {/* Modal */}
-            <div className="relative bg-white w-full max-w-lg max-h-[85vh] rounded-t-2xl sm:rounded-2xl shadow-xl overflow-hidden flex flex-col">
+            <div 
+                className="relative bg-white w-full max-w-lg rounded-t-2xl sm:rounded-2xl shadow-xl overflow-hidden flex flex-col"
+                style={{
+                    // 最大高さを動的に計算（セーフエリアを考慮）
+                    maxHeight: viewportHeight 
+                        ? `calc(${viewportHeight}px - 20px)` 
+                        : '85vh',
+                }}
+            >
                 {/* Header */}
-                <div className="flex items-center justify-between p-4 border-b border-gray-100">
+                <div className="flex-shrink-0 flex items-center justify-between p-4 border-b border-gray-100">
                     <h3 className="font-bold text-lg text-gray-800">検索条件を編集</h3>
                     <button
                         onClick={onClose}
@@ -157,8 +196,8 @@ export default function ConditionEditModal({
                     </button>
                 </div>
 
-                {/* Content */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-6">
+                {/* Content - スクロール可能エリア */}
+                <div className="flex-1 overflow-y-auto overscroll-contain p-4 space-y-6">
                     {/* キャラクター */}
                     <SelectionSection
                         title="お気に入りキャラ"
@@ -223,10 +262,18 @@ export default function ConditionEditModal({
                             </select>
                         </div>
                     </div>
+                    
+                    {/* 下部の余白（ボタンが隠れないように） */}
+                    <div className="h-2" />
                 </div>
 
-                {/* Footer */}
-                <div className="p-4 border-t border-gray-100">
+                {/* Footer - 常に表示される固定フッター */}
+                <div 
+                    className="flex-shrink-0 p-4 border-t border-gray-100 bg-white"
+                    style={{
+                        paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))',
+                    }}
+                >
                     <button
                         onClick={handleSave}
                         disabled={saving}
@@ -246,6 +293,7 @@ export default function ConditionEditModal({
         </div>
     );
 }
+
 
 
 
