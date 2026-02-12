@@ -206,11 +206,11 @@ export default function RouteDetailView({
                                                 {shop.category && shop.category !== 'shop' ? style.icon : index + 1}
                                             </div>
                                             <div className="flex-1">
-                                                <div className="flex items-baseline gap-2 mb-1">
-                                                    <span className="font-bold text-gray-800">{shop.time}</span>
-                                                    <span className="text-sm font-bold text-gray-700">{shop.name}</span>
+                                                <div className="flex items-baseline gap-2 mb-1 flex-nowrap">
+                                                    <span className="font-bold text-gray-800 flex-shrink-0">{shop.time}</span>
+                                                    <span className="text-sm font-bold text-gray-700 truncate">{shop.name}</span>
                                                     {shop.category && shop.category !== 'shop' && (
-                                                        <span className={`text-xs px-2 py-0.5 rounded-full ${style.badgeBg} ${style.badgeText}`}>
+                                                        <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 whitespace-nowrap ${style.badgeBg} ${style.badgeText}`}>
                                                             {style.label}
                                                         </span>
                                                     )}

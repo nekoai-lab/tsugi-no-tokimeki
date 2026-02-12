@@ -167,7 +167,7 @@ export default function RouteRegenerateModal({
             <div className="bg-white w-full h-full max-w-md rounded-t-3xl shadow-2xl animate-in slide-in-from-bottom-10 duration-300 flex flex-col">
                 {/* Header */}
                 <div className="flex justify-between items-center p-5 pt-safe border-b border-gray-100">
-                    <h3 className="font-bold text-lg">ルート提案 by AI</h3>
+                    <h3 className="font-bold text-lg">AI ルート提案</h3>
                     <button
                         onClick={onClose}
                         className="p-1 hover:bg-gray-100 rounded-full transition-colors"
@@ -185,8 +185,8 @@ export default function RouteRegenerateModal({
                         >
                             <div
                                 className={`max-w-[85%] rounded-2xl px-4 py-3 ${msg.role === 'user'
-                                        ? 'bg-pink-500 text-white'
-                                        : 'bg-gray-100 text-gray-800'
+                                    ? 'bg-pink-500 text-white'
+                                    : 'bg-gray-100 text-gray-800'
                                     }`}
                             >
                                 <div className="text-sm leading-relaxed">
