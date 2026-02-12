@@ -323,38 +323,20 @@ tsugi-no-tokimeki/
 │   ├── ImageViewer.tsx       # 画像フルスクリーン表示
 │   ├── TimeEditModal.tsx     # 時間編集モーダル
 │   ├── StickerAlbumPostModal.tsx  # シールアルバム投稿モーダル
-│   ├── RouteProposalModal/   # ルート提案モーダル
-│   │   ├── RouteProposalModal.tsx
-│   │   └── components/       # ステップUI
-│   │       ├── AreasStep.tsx
-│   │       ├── DateStep.tsx
-│   │       ├── TimeStep.tsx
-│   │       ├── ShopsStep.tsx
-│   │       ├── StickerTypeStep.tsx
-│   │       ├── StickerDesignStep.tsx
-│   │       ├── CompleteStep.tsx
-│   │       ├── ChatMessage.tsx
-│   │       └── LoadingIndicator.tsx
 │   └── shared/               # 共通UIコンポーネント
 │       ├── ButtonSelect.tsx
 │       ├── CustomDatePicker.tsx
-│       ├── CustomTimePicker.tsx
 │       ├── SelectWithCustom.tsx
 │       └── StepButton.tsx
 ├── contexts/                 # React Context
 │   └── AppContext.tsx        # グローバル状態管理
 ├── hooks/                    # カスタムフック
-│   ├── useRouteProposalForm.ts   # ルート提案フォーム状態
-│   ├── useRouteProposalChat.ts   # AIチャット履歴管理
-│   └── useRouteProposalSteps.ts  # ステップUI制御
 ├── lib/                      # ユーティリティ・設定
 │   ├── firebase.ts           # Firebase初期化（Auth, Firestore, Storage）
 │   ├── liff.ts               # LINE LIFF SDK 初期化・操作
 │   ├── line.ts               # LINE Messaging API メッセージ構築
 │   ├── types.ts              # TypeScript型定義
-│   ├── routeProposalTypes.ts # ルート提案の型定義
 │   ├── routeProposalService.ts # Firestore CRUD (ルート提案)
-│   ├── routeProposalUtils.ts # ルート提案のフォーマット・パース
 │   ├── postService.ts        # 投稿のいいね機能
 │   ├── stickerAlbumService.ts # シールアルバム投稿サービス
 │   └── utils.ts              # ヘルパー関数・定数
