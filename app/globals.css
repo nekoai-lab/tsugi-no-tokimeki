@@ -150,3 +150,21 @@ select {
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* iOS通常ブラウザではsvhを使用 */
+.full-height {
+  height: 100svh;
+}
+
+/* LIFFブラウザではdvhを使用 */
+.is-liff .full-height {
+  height: 100dvh !important;
+}
+
+.min-full-height {
+  min-height: 100svh;
+}
+
+.is-liff .min-full-height {
+  min-height: 100dvh !important;
+}

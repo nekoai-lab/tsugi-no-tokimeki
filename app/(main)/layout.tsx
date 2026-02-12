@@ -34,7 +34,7 @@ export default function MainLayout({
     // ローディング中または未認証の場合はローディング画面を表示
     if (loading || !user || !userProfile) {
         return (
-            <div className="flex min-h-[100dvh] h-[100dvh] w-full items-center justify-center bg-white">
+            <div className="flex min-full-height full-height w-full items-center justify-center bg-white">
                 <div className="flex flex-col items-center">
                     <div className="w-10 h-10 text-pink-500 animate-bounce">✨</div>
                     <p className="mt-4 text-pink-400 font-bold text-sm tracking-widest">LOADING...</p>
@@ -44,7 +44,7 @@ export default function MainLayout({
     }
 
     return (
-        <div className="flex flex-col min-h-[100dvh] h-[100dvh] bg-gray-50 max-w-md mx-auto shadow-2xl overflow-hidden relative">
+        <div className="flex flex-col min-full-height full-height bg-gray-50 max-w-md mx-auto shadow-2xl overflow-hidden relative">
             {/* Header - モーダル表示中は非表示 */}
             {!isModalOpen && showBottomNav && (
                 <header className="bg-white/80 backdrop-blur-md px-4 py-4 pt-safe sticky top-0 z-10 border-b border-gray-100 flex justify-between items-center">

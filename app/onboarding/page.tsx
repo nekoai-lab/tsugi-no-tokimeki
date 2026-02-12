@@ -27,7 +27,7 @@ const CONFIRM_STEP = 14;
 // ローディングコンポーネント
 function OnboardingLoading() {
     return (
-        <div className="flex min-h-[100dvh] w-full items-center justify-center onboarding-bg">
+        <div className="flex min-full-height w-full items-center justify-center onboarding-bg">
             <div className="flex flex-col items-center">
                 <Sparkles className="w-10 h-10 text-pink-500 animate-bounce" />
                 <p className="mt-4 text-pink-400 font-bold text-sm tracking-widest">LOADING...</p>
@@ -403,7 +403,7 @@ function OnboardingContent() {
 
     if (loading || !user) {
         return (
-            <div className="flex min-h-[100dvh] w-full items-center justify-center onboarding-bg">
+            <div className="flex min-full-height w-full items-center justify-center onboarding-bg">
                 <div className="flex flex-col items-center">
                     <Sparkles className="w-10 h-10 text-pink-500 animate-bounce" />
                     <p className="mt-4 text-pink-400 font-bold text-sm tracking-widest">LOADING...</p>
@@ -413,7 +413,7 @@ function OnboardingContent() {
     }
 
     return (
-        <div className="flex flex-col h-[100dvh] onboarding-bg p-6 overflow-y-auto overflow-x-hidden">
+        <div className="flex flex-col full-height onboarding-bg p-6 overflow-y-auto overflow-x-hidden">
             <div className="flex-1 flex flex-col justify-center items-center max-w-md mx-auto w-full">
 
                 {/* ヘッダー: 選択ステップ（6以降、自動遷移画面を除く）でのみ表示 */}
