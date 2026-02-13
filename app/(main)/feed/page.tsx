@@ -5,21 +5,23 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db, appId } from '@/lib/firebase';
 import { useApp } from '@/contexts/AppContext';
 import { getRelativeTime } from '@/lib/utils';
-import { addLike, removeLike } from '@/lib/postService';
-import { Heart, MapPin } from 'lucide-react';
+import { pinPost, unpinPost } from '@/lib/postService';
+import { Pin, MapPin } from 'lucide-react';
 import type { Post, UserProfile } from '@/lib/types';
+import PostDetailModal from '@/components/PostDetailModal';
 
-type StatusFilter = 'all' | 'seen' | 'soldout';
+type StatusFilter = 'all' | 'seen' | 'soldout' | 'pinned';
 
 interface UserProfileMap {
     [uid: string]: { displayName: string; handle: string };
 }
 
 export default function FeedPage() {
-    const { posts, user, userProfile } = useApp();
+    const { posts, user, userProfile, pinnedPostIds } = useApp();
     const [filter, setFilter] = useState<StatusFilter>('all');
     const [selectedCharacter, setSelectedCharacter] = useState<string | null>(null);
     const [userMap, setUserMap] = useState<UserProfileMap>({});
+    const [selectedPost, setSelectedPost] = useState<Post | null>(null);
 
     // 投稿者プロフィールを取得
     useEffect(() => {
@@ -114,6 +116,7 @@ export default function FeedPage() {
         // ステータスフィルタ
         if (filter === 'seen') result = result.filter(p => p.status !== 'soldout');
         if (filter === 'soldout') result = result.filter(p => p.status === 'soldout');
+        if (filter === 'pinned') result = result.filter(p => pinnedPostIds.includes(p.id));
         
         // キャラフィルタ（selectedCharacterがある場合）
         if (selectedCharacter) {
@@ -139,7 +142,7 @@ export default function FeedPage() {
         });
         
         return result;
-    }, [posts, filter, selectedCharacter]);
+    }, [posts, filter, selectedCharacter, pinnedPostIds]);
 
     // basePostsの最新3件（TOPカードのリスト表示用）
     const topBasePosts = useMemo(() => {
@@ -170,13 +173,13 @@ export default function FeedPage() {
         return `${char}の報告が${count}件あるよ`;
     }, [basePosts]);
 
-    const handleToggleLike = async (post: Post) => {
+    const handleTogglePin = async (post: Post) => {
         if (!user) return;
-        const liked = post.likes?.includes(user.uid);
-        if (liked) {
-            await removeLike(post.id, user.uid);
+        const isPinned = pinnedPostIds.includes(post.id);
+        if (isPinned) {
+            await unpinPost(user.uid, post.id);
         } else {
-            await addLike(post.id, user.uid);
+            await pinPost(user.uid, post.id);
         }
     };
 
@@ -272,7 +275,7 @@ export default function FeedPage() {
 
             {/* Filters */}
             <div className="px-4 py-3 bg-white border-b border-gray-50 flex gap-2 overflow-x-auto">
-                {([['all', '全て'], ['seen', 'あった'], ['soldout', '売り切れ']] as const).map(([key, label]) => (
+                {([['all', '全て'], ['seen', 'あった'], ['soldout', '売り切れ'], ['pinned', 'ピン']] as const).map(([key, label]) => (
                     <button
                         key={key}
                         onClick={() => setFilter(key)}
@@ -300,7 +303,11 @@ export default function FeedPage() {
                         const handle = authorInfo?.handle || '';
 
                         return (
-                            <div key={post.id} className="px-4 py-3 bg-white hover:bg-gray-50 transition-colors">
+                            <div 
+                                key={post.id} 
+                                onClick={() => setSelectedPost(post)}
+                                className="px-4 py-3 bg-white hover:bg-gray-50 transition-colors cursor-pointer"
+                            >
                                 {/* 1行目: ステータス+キャラ vs @handle */}
                                 <div className="flex justify-between items-center mb-1">
                                     <div className="flex items-center gap-2">
@@ -342,25 +349,21 @@ export default function FeedPage() {
                                         <span className="text-[10px] text-gray-400 whitespace-nowrap">
                                             {getRelativeTime(post.createdAt)}
                                         </span>
-                                        {/* Like Button */}
+                                        {/* Pin Button */}
                                         <button
-                                            onClick={() => handleToggleLike(post)}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleTogglePin(post);
+                                            }}
                                             className="flex items-center gap-1"
                                         >
-                                            <Heart
+                                            <Pin
                                                 className={`w-3.5 h-3.5 transition-colors ${
-                                                    user && post.likes?.includes(user.uid)
+                                                    pinnedPostIds.includes(post.id)
                                                         ? 'fill-pink-500 text-pink-500'
                                                         : 'text-gray-300 hover:text-pink-300'
                                                 }`}
                                             />
-                                            {(post.likes?.length || 0) > 0 && (
-                                                <span className={`text-[10px] ${
-                                                    user && post.likes?.includes(user.uid) ? 'text-pink-500' : 'text-gray-400'
-                                                }`}>
-                                                    {post.likes?.length}
-                                                </span>
-                                            )}
                                         </button>
                                     </div>
                                 </div>
@@ -369,6 +372,15 @@ export default function FeedPage() {
                     })
                 )}
             </div>
+
+            {/* Post Detail Modal */}
+            {selectedPost && (
+                <PostDetailModal
+                    post={selectedPost}
+                    authorHandle={selectedPost.authorUid ? userMap[selectedPost.authorUid]?.handle : undefined}
+                    onClose={() => setSelectedPost(null)}
+                />
+            )}
         </div>
     );
 }
