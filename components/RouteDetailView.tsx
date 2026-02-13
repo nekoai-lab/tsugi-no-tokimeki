@@ -205,17 +205,19 @@ export default function RouteDetailView({
                                             <div className={`${style.badgeBg} ${style.badgeText} rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm flex-shrink-0`}>
                                                 {shop.category && shop.category !== 'shop' ? style.icon : index + 1}
                                             </div>
-                                            <div className="flex-1">
-                                                <div className="flex items-baseline gap-2 mb-1 flex-nowrap">
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-baseline gap-2 mb-1">
                                                     <span className="font-bold text-gray-800 flex-shrink-0">{shop.time}</span>
-                                                    <span className="text-sm font-bold text-gray-700 truncate">{shop.name}</span>
-                                                    {shop.category && shop.category !== 'shop' && (
-                                                        <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 whitespace-nowrap ${style.badgeBg} ${style.badgeText}`}>
+                                                    <span className="text-sm font-bold text-gray-700 break-words">{shop.name}</span>
+                                                </div>
+                                                {shop.category && shop.category !== 'shop' && (
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <span className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${style.badgeBg} ${style.badgeText}`}>
                                                             {style.label}
                                                         </span>
-                                                    )}
-                                                </div>
-                                                <p className="text-sm text-gray-600 mb-2">{shop.description}</p>
+                                                    </div>
+                                                )}
+                                                <p className="text-sm text-gray-600 mb-2 break-words whitespace-normal">{shop.description}</p>
                                                 {shop.travelTimeFromPrevious ? (
                                                     <div className="flex items-center gap-1 text-xs text-gray-500">
                                                         <MapPin className="w-3 h-3" />
