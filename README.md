@@ -631,6 +631,25 @@ Cloud Run                              LINE Messaging API
 | `LINE_CHANNEL_ACCESS_TOKEN` | Secret Manager | プッシュ通知 |
 | `LINE_CHANNEL_SECRET` | Secret Manager | Webhook検証 |
 
+### 友だち追加時の自動応答メッセージ（LINE Official Account Manager）
+
+LINE Official Account Managerの管理画面で設定が必要です。
+
+**設定場所**: [LINE Official Account Manager](https://manager.line.biz/) → 応答メッセージ → あいさつメッセージ
+
+**推奨メッセージ（LIFF復帰問題対策）**:
+
+```
+友だち追加ありがとう！🎉
+つづきの設定はこちら（推奨：外部ブラウザ）
+https://tsugi-no-tokimeki-265901745615.asia-northeast1.run.app/onboarding?step=5
+
+LINE内で開く場合はこちら（戻れない時は上のリンクを試してね）
+https://liff.line.me/2008962156-2k9hitOb
+```
+
+> ⚠️ **ポイント**: 外部ブラウザURLを先頭に置くことで、LIFF復帰で詰まる確率を下げられます。
+
 ### API エンドポイント
 
 | エンドポイント | 用途 | 状態 |
