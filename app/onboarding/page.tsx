@@ -85,6 +85,10 @@ function OnboardingContent() {
     const [currentSlide, setCurrentSlide] = useState(0);
     const sliderRef = useRef<HTMLDivElement>(null);
 
+    // 確認画面の二重実行防止用
+    const confirmTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const didNavigateRef = useRef(false);
+
     const [profile, setProfile] = useState<UserProfile>({
         favorites: [],
         area: '',
@@ -354,30 +358,41 @@ function OnboardingContent() {
             urlStep,
             isLiffReturn,
             hasUserProfile: !!userProfile,
+            didNavigate: didNavigateRef.current,
         });
+
+        // 既に遷移済みならスキップ
+        if (didNavigateRef.current) {
+            console.log('🔵 [Confirm] Already navigated, skipping');
+            return;
+        }
 
         if (step !== CONFIRM_STEP || !user) {
             console.log('🔵 [Confirm] Early return:', { reason: step !== CONFIRM_STEP ? 'not confirm step' : 'no user' });
             return;
         }
 
-        // 既存ユーザーの LIFF return: lineUserId のみ追記保存
+        // 既存タイマーをクリア（新しい条件でやり直し）
+        if (confirmTimerRef.current) {
+            console.log('🔵 [Confirm] Clearing previous timer');
+            clearTimeout(confirmTimerRef.current);
+            confirmTimerRef.current = null;
+        }
+
         const isFromLiffConfirm = urlStep === '5' || isLiffReturn;
         console.log('🔵 [Confirm] isFromLiffConfirm:', isFromLiffConfirm);
 
-        if (isFromLiffConfirm && userProfile) {
-            if (!lineUserId) {
-                console.log('🔵 [Confirm] Waiting for lineUserId (existing user)...');
-                // LIFF init 完了を待つ（タイムアウト: 8秒で /home へ）
-                const fallback = setTimeout(() => {
-                    console.log('🔵 [Confirm] lineUserId timeout, redirecting to /home');
-                    router.push('/home');
-                }, 8000);
-                return () => clearTimeout(fallback);
-            }
-            console.log('🔵 [Confirm] Existing user with lineUserId, merging in 3s...');
-            // lineUserId 取得済み → 既存プロフィールに merge 保存して遷移
-            const timer = setTimeout(async () => {
+        // 遷移処理（共通）
+        const navigateToHome = () => {
+            if (didNavigateRef.current) return;  // 二重遷移防止
+            didNavigateRef.current = true;
+            router.push('/home');
+        };
+
+        // 既存ユーザーの LIFF return + lineUserId取得済み → merge-save
+        if (isFromLiffConfirm && userProfile && lineUserId) {
+            console.info('🔵 [Confirm] existing | isLiffReturn: true | lineUserId: true | action: merge-save');
+            confirmTimerRef.current = setTimeout(async () => {
                 try {
                     console.log('🔵 [Confirm] Merging lineUserId to existing profile...');
                     await setDoc(
@@ -385,32 +400,69 @@ function OnboardingContent() {
                         { lineUserId, updatedAt: serverTimestamp() },
                         { merge: true }
                     );
-                    console.log('🔵 [Confirm] Merge success, redirecting to /home');
+                    console.log('🔵 [Confirm] Merge success');
                 } catch (e) {
                     console.error("🔴 [Confirm] Error updating lineUserId", e);
+                } finally {
+                    navigateToHome();
                 }
-                router.push('/home');
             }, 3000);
-            return () => clearTimeout(timer);
+            return () => {
+                if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current);
+            };
         }
 
-        // 新規ユーザーの LIFF return: lineUserId 取得を待ってからフル保存
-        if (isFromLiffConfirm && !lineUserId) {
-            console.log('🔵 [Confirm] New user from LIFF, waiting for lineUserId...');
-            const fallback = setTimeout(() => {
-                console.log('🔵 [Confirm] lineUserId timeout, saving without it');
-                saveProfile();
-            }, 8000);
-            return () => clearTimeout(fallback);
+        // 既存ユーザーの LIFF return + lineUserIdなし → 待ってからsaveProfile
+        if (isFromLiffConfirm && userProfile && !lineUserId) {
+            console.info('🔵 [Confirm] existing | isLiffReturn: true | lineUserId: false | action: timeout-saveProfile');
+            confirmTimerRef.current = setTimeout(async () => {
+                console.log('🔵 [Confirm] lineUserId timeout, calling saveProfile()');
+                try {
+                    await saveProfile();
+                } catch (e) {
+                    console.error("🔴 [Confirm] Error in saveProfile", e);
+                } finally {
+                    navigateToHome();
+                }
+            }, 3000);
+            return () => {
+                if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current);
+            };
         }
 
-        // 通常フロー or LIFF return で lineUserId 取得済み: 3秒後に保存
-        console.log('🔵 [Confirm] Normal flow, saving in 3s...', { lineUserId });
-        const timer = setTimeout(() => {
+        // 新規ユーザーの LIFF return + lineUserIdなし → 待ってからsaveProfile
+        if (isFromLiffConfirm && !userProfile && !lineUserId) {
+            console.info('🔵 [Confirm] new | isLiffReturn: true | lineUserId: false | action: timeout-saveProfile');
+            confirmTimerRef.current = setTimeout(async () => {
+                console.log('🔵 [Confirm] lineUserId timeout, calling saveProfile()');
+                try {
+                    await saveProfile();
+                } catch (e) {
+                    console.error("🔴 [Confirm] Error in saveProfile", e);
+                } finally {
+                    navigateToHome();
+                }
+            }, 3000);
+            return () => {
+                if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current);
+            };
+        }
+
+        // 通常フロー or LIFF return で lineUserId 取得済み
+        console.info('🔵 [Confirm] normal | isLiffReturn:', isLiffReturn, '| lineUserId:', !!lineUserId, '| action: saveProfile');
+        confirmTimerRef.current = setTimeout(async () => {
             console.log('🔵 [Confirm] Calling saveProfile()');
-            saveProfile();
+            try {
+                await saveProfile();
+            } catch (e) {
+                console.error("🔴 [Confirm] Error in saveProfile", e);
+            } finally {
+                navigateToHome();
+            }
         }, 3000);
-        return () => clearTimeout(timer);
+        return () => {
+            if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current);
+        };
     }, [step, lineUserId, user, urlStep, saveProfile, userProfile, router, isLiffReturn]);
 
     // LINE友達追加URLを開く
