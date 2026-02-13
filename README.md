@@ -13,6 +13,8 @@
 
 🔗 **デモ**: [https://tsugi-no-tokimeki-265901745615.asia-northeast1.run.app](https://tsugi-no-tokimeki-265901745615.asia-northeast1.run.app)
 
+> ⚠️ **LINE内ブラウザで戻れない場合**: 外部ブラウザ（Chrome/Safari）で [こちら](https://tsugi-no-tokimeki-265901745615.asia-northeast1.run.app/onboarding?step=5) を開いて続行できます。
+
 ## 📖 プロジェクト概要
 
 **Tsugi no Tokimeki** は、お気に入りのキャラグッズ（シール）の目撃情報をリアルタイムで共有し、AIがシールを見に行くスケジュールを立ててユーザーにLINEで提案するWebアプリケーションです。
