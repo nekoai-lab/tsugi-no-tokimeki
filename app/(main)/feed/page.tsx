@@ -17,11 +17,23 @@ interface UserProfileMap {
 }
 
 export default function FeedPage() {
-    const { posts, user, userProfile, pinnedPostIds } = useApp();
+    const { posts, user, userProfile, pinnedPostIds, setIsModalOpen } = useApp();
     const [filter, setFilter] = useState<StatusFilter>('all');
     const [selectedCharacter, setSelectedCharacter] = useState<string | null>(null);
     const [userMap, setUserMap] = useState<UserProfileMap>({});
     const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+
+    // 投稿詳細モーダルを開く
+    const openPostDetail = (post: Post) => {
+        setSelectedPost(post);
+        setIsModalOpen(true);
+    };
+
+    // 投稿詳細モーダルを閉じる
+    const closePostDetail = () => {
+        setSelectedPost(null);
+        setIsModalOpen(false);
+    };
 
     // 投稿者プロフィールを取得
     useEffect(() => {
@@ -305,7 +317,7 @@ export default function FeedPage() {
                         return (
                             <div 
                                 key={post.id} 
-                                onClick={() => setSelectedPost(post)}
+                                onClick={() => openPostDetail(post)}
                                 className="px-4 py-3 bg-white hover:bg-gray-50 transition-colors cursor-pointer"
                             >
                                 {/* 1行目: ステータス+キャラ vs @handle */}
@@ -378,7 +390,7 @@ export default function FeedPage() {
                 <PostDetailModal
                     post={selectedPost}
                     authorHandle={selectedPost.authorUid ? userMap[selectedPost.authorUid]?.handle : undefined}
-                    onClose={() => setSelectedPost(null)}
+                    onClose={closePostDetail}
                 />
             )}
         </div>
