@@ -8,6 +8,7 @@ import { linkLineAccount } from '@/lib/userService';
 import { initializeLiff, isLineLoggedIn, getLineProfile } from '@/lib/liff';
 import type { UserProfile, Post, StoreEvent, Suggestion, FirebaseUser } from '@/lib/types';
 import { updateDebugStatus, debugLog } from '@/app/_components/DebugConsole';
+import { subscribePinnedPosts } from '@/lib/postService';
 
 interface AppContextType {
   user: FirebaseUser | null;
@@ -23,6 +24,8 @@ interface AppContextType {
   // LINE連携を手動で実行
   linkLine: () => Promise<void>;
   isLinkingLine: boolean;
+  // ピン留めされた投稿ID
+  pinnedPostIds: string[];
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -38,6 +41,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLinkingLine, setIsLinkingLine] = useState(false);
+  const [pinnedPostIds, setPinnedPostIds] = useState<string[]>([]);
   
   // クロージャ問題を避けるためrefで状態を追跡
   const authReadyRef = useRef(false);
@@ -366,6 +370,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     };
   }, [user]);
 
+  // ピン留め投稿ID購読
+  useEffect(() => {
+    if (!user) {
+      setPinnedPostIds([]);
+      return;
+    }
+
+    const unsubscribe = subscribePinnedPosts(user.uid, (postIds) => {
+      setPinnedPostIds(postIds);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
   // Mock "Agent" Logic (Generating Suggestions locally for prototype)
   const suggestions = useMemo(() => {
     if (posts.length > 0 && userProfile) {
@@ -438,6 +456,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setIsModalOpen,
         linkLine: handleLinkLine,
         isLinkingLine,
+        pinnedPostIds,
       }}
     >
       {children}

@@ -20,9 +20,9 @@ const TIME_OPTIONS = Array.from({ length: 11 }, (_, i) => {
 });
 
 // LINE通知設定の内部ステップ番号
-const LINE_STEP = 13;
+const LINE_STEP = 14;
 // 確認画面の内部ステップ番号
-const CONFIRM_STEP = 14;
+const CONFIRM_STEP = 15;
 
 // ローディングコンポーネント
 function OnboardingLoading() {
@@ -52,15 +52,16 @@ export default function OnboardingPage() {
 // Step 3: 機能紹介タイトル（自動遷移）
 // Step 4: 機能紹介スライド（スワイプ式）
 // Step 5: ユーザー情報入力開始（自動遷移）
-// Step 6: シール種類選択
-// Step 7: キャラ選択
-// Step 8: エリア選択
-// Step 9: 店舗選択
-// Step 10: 時間指定
-// Step 11: ありがとう画面（自動遷移）
-// Step 12: LINE通知案内画面（自動遷移）
-// Step 13: LINE通知設定（友達追加）
-// Step 14: 確認＆保存
+// Step 6: AI説明画面（自動遷移）
+// Step 7: シール種類選択
+// Step 8: キャラ選択
+// Step 9: エリア選択
+// Step 10: 店舗選択
+// Step 11: 時間指定
+// Step 12: ありがとう画面（自動遷移）
+// Step 13: LINE通知案内画面（自動遷移）
+// Step 14: LINE通知設定（友達追加）
+// Step 15: 確認＆保存
 function OnboardingContent() {
     const { user, userProfile, loading } = useApp();
     const router = useRouter();
@@ -68,14 +69,14 @@ function OnboardingContent() {
 
     // URLパラメータから初期ステップを取得
     const urlStep = searchParams.get('step');
-    
+
     // LIFF からの戻りを検出（liff.state, code, state などのパラメータがある）
     const isLiffReturn = typeof window !== 'undefined' && (
         window.location.search.includes('liff.state') ||
         window.location.search.includes('code=') ||
         window.location.search.includes('liffClientId')
     );
-    
+
     // step=5 または LIFF return の場合は確認画面へ
     const initialStep = (urlStep === '5' || isLiffReturn) ? CONFIRM_STEP : parseInt(urlStep || '1');
     const [step, setStep] = useState(initialStep);
@@ -97,9 +98,9 @@ function OnboardingContent() {
     const [lineUserId, setLineUserId] = useState<string | null>(null);
     const [liffInitialized, setLiffInitialized] = useState(false);
 
-    // 自動遷移ロジック（Step 1, 2, 3, 5, 11, 12）
+    // 自動遷移ロジック（Step 1, 2, 3, 5, 6, 12, 13）
     useEffect(() => {
-        if ([1, 2, 3, 5, 11, 12].includes(step)) {
+        if ([1, 2, 3, 5, 6, 12, 13].includes(step)) {
             const timer = setTimeout(() => {
                 setStep(step + 1);
             }, 3000);
@@ -155,23 +156,23 @@ function OnboardingContent() {
     // URLからLIFF系パラメータを除去してクリーンアップ
     const cleanLiffParamsFromUrl = useCallback(() => {
         if (typeof window === 'undefined') return;
-        
+
         const params = new URLSearchParams(window.location.search);
         const stepParam = params.get('step');
-        
+
         // 除去対象: liff.*, liffClientId, liffRedirectUri, code, state 等
-        const keysToRemove = [...params.keys()].filter(key => 
-            key.startsWith('liff') || 
-            key === 'code' || 
+        const keysToRemove = [...params.keys()].filter(key =>
+            key.startsWith('liff') ||
+            key === 'code' ||
             key === 'state'
         );
-        
+
         if (keysToRemove.length > 0) {
             console.log('🧹 [LIFF] Cleaning params from URL:', keysToRemove);
-            
+
             // クリーンなURLに置換（リロードなし）
-            const cleanUrl = stepParam 
-                ? `/onboarding?step=${stepParam}` 
+            const cleanUrl = stepParam
+                ? `/onboarding?step=${stepParam}`
                 : '/onboarding';
             window.history.replaceState({}, '', cleanUrl);
         }
@@ -196,16 +197,16 @@ function OnboardingContent() {
                 window.location.search.includes('code=') ||
                 window.location.search.includes('liffClientId')
             ));
-            
+
             if (isFromLiff) {
                 console.log('🔵 [LIFF] LIFF return detected, simplified init to prevent loop');
                 try {
                     const initialized = await initializeLiff();
                     setLiffInitialized(initialized);
-                    
+
                     // LIFF初期化完了後、URLをクリーンアップ
                     cleanLiffParamsFromUrl();
-                    
+
                     if (initialized && isLineLoggedIn()) {
                         const lineProfile = await getLineProfile();
                         if (lineProfile) {
@@ -237,7 +238,7 @@ function OnboardingContent() {
 
                 setLiffInitialized(initialized);
                 console.log('🔵 [LIFF] Initialized:', initialized);
-                
+
                 // LIFF初期化完了後、URLをクリーンアップ
                 cleanLiffParamsFromUrl();
 
@@ -416,8 +417,8 @@ function OnboardingContent() {
         <div className="flex flex-col full-height onboarding-bg p-6 overflow-y-auto overflow-x-hidden">
             <div className="flex-1 flex flex-col justify-center items-center max-w-md mx-auto w-full">
 
-                {/* ヘッダー: 選択ステップ（6以降、自動遷移画面を除く）でのみ表示 */}
-                {step >= 6 && step !== 11 && step !== 12 && step !== CONFIRM_STEP && (
+                {/* ヘッダー: 選択ステップ（7以降、自動遷移画面を除く）でのみ表示 */}
+                {step >= 7 && step !== 11 && step !== 12 && step !== 13 && step !== CONFIRM_STEP && (
                     <div className="mb-8 text-center">
                         <Sparkles className="w-12 h-12 text-pink-500 mx-auto mb-4" />
                         <h1 className="text-2xl font-bold text-gray-800">Tsugi no Tokimeki</h1>
@@ -472,7 +473,7 @@ function OnboardingContent() {
                                 </div>
                                 <p className="text-base text-gray-700 leading-relaxed">
                                     シールを見つけたら<br />
-                                    みんなに共有することができます。
+                                    みんなに共有することができます
                                 </p>
                             </div>
 
@@ -482,8 +483,8 @@ function OnboardingContent() {
                                     <CalendarDays className="w-12 h-12 text-purple-500" />
                                 </div>
                                 <p className="text-base text-gray-700 leading-relaxed">
-                                    AIが過去のデータを元に、その日の<br />
-                                    最適なスケジュールを提案してくれます。
+                                    AIが、その日の最適なシール探しの<br />
+                                    スケジュールを提案します
                                 </p>
                             </div>
 
@@ -493,8 +494,8 @@ function OnboardingContent() {
                                     <BookOpen className="w-12 h-12 text-green-500" />
                                 </div>
                                 <p className="text-base text-gray-700 leading-relaxed">
-                                    みんなのシール帳を見ることができるます<br />
-                                    ぜひ参考にしてみてください
+                                    みんなのシール帳を見ることができます<br />
+                                    ぜひあなたのシール帳も投稿してください
                                 </p>
                             </div>
                         </div>
@@ -522,17 +523,29 @@ function OnboardingContent() {
                 {/* Step 5: ユーザー情報入力開始（自動遷移） */}
                 {step === 5 && (
                     <div className="w-full flex flex-col items-center justify-center text-center">
-                        <p className="text-lg text-gray-500 animate-float-up">
+                        <p className="text-lg text-gray-700 leading-relaxed animate-float-up px-4">
                             それでは、シールを探す前に
                         </p>
                         <p className="text-lg text-gray-700 leading-relaxed animate-float-up px-4">
-                            君のことを教えてね！
+                            あなたのことを教えてね！
                         </p>
                     </div>
                 )}
 
-                {/* Step 6: シール種類選択 */}
+                {/* Step 6: AI説明画面（自動遷移） */}
                 {step === 6 && (
+                    <div className="w-full flex flex-col items-center justify-center text-center">
+                        <p className="text-lg text-gray-700 leading-relaxed animate-float-up px-4">
+                            この情報を元に、
+                        </p>
+                        <p className="text-lg text-gray-700 leading-relaxed animate-float-up px-4">
+                            AIがシールを探す1日のスケジュールを考えるよ！
+                        </p>
+                    </div>
+                )}
+
+                {/* Step 7: シール種類選択 */}
+                {step === 7 && (
                     <div className="w-full bg-white p-6 rounded-2xl shadow-sm animate-in fade-in duration-500">
                         <h2 className="text-lg font-bold mb-4 text-center">欲しいシールの種類は？</h2>
                         <p className="text-xs text-center text-gray-400 mb-4">複数選択できます</p>
@@ -551,7 +564,7 @@ function OnboardingContent() {
                             ))}
                         </div>
                         <button
-                            onClick={() => setStep(7)}
+                            onClick={() => setStep(8)}
                             disabled={(profile.preferredStickerTypes || []).length === 0}
                             className="w-full bg-gray-800 text-white py-3 rounded-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed"
                         >
@@ -560,8 +573,8 @@ function OnboardingContent() {
                     </div>
                 )}
 
-                {/* Step 7: キャラ選択 */}
-                {step === 7 && (
+                {/* Step 8: キャラ選択 */}
+                {step === 8 && (
                     <div className="w-full bg-white p-6 rounded-2xl shadow-sm animate-in fade-in duration-500">
                         <h2 className="text-lg font-bold mb-4 text-center">お気に入りのキャラを選んでね</h2>
                         <p className="text-xs text-center text-gray-400 mb-4">複数選択できます</p>
@@ -580,9 +593,9 @@ function OnboardingContent() {
                             ))}
                         </div>
                         <div className="flex gap-3">
-                            <button onClick={() => setStep(6)} className="flex-1 py-3 text-gray-500 font-medium">戻る</button>
+                            <button onClick={() => setStep(7)} className="flex-1 py-3 text-gray-500 font-medium">戻る</button>
                             <button
-                                onClick={() => setStep(8)}
+                                onClick={() => setStep(9)}
                                 disabled={profile.favorites.length === 0}
                                 className="flex-1 bg-gray-800 text-white py-3 rounded-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed"
                             >
@@ -592,8 +605,8 @@ function OnboardingContent() {
                     </div>
                 )}
 
-                {/* Step 8: エリア選択 */}
-                {step === 8 && (
+                {/* Step 9: エリア選択 */}
+                {step === 9 && (
                     <div className="w-full bg-white p-6 rounded-2xl shadow-sm animate-in fade-in duration-500">
                         <h2 className="text-lg font-bold mb-4 text-center">よく行くエリアは？</h2>
                         <p className="text-xs text-center text-gray-400 mb-4">複数選択できます</p>
@@ -612,9 +625,9 @@ function OnboardingContent() {
                             ))}
                         </div>
                         <div className="flex gap-3">
-                            <button onClick={() => setStep(7)} className="flex-1 py-3 text-gray-500 font-medium">戻る</button>
+                            <button onClick={() => setStep(8)} className="flex-1 py-3 text-gray-500 font-medium">戻る</button>
                             <button
-                                onClick={() => setStep(9)}
+                                onClick={() => setStep(10)}
                                 disabled={(profile.areas || []).length === 0}
                                 className="flex-1 bg-gray-800 text-white py-3 rounded-xl font-bold disabled:opacity-50"
                             >
@@ -624,8 +637,8 @@ function OnboardingContent() {
                     </div>
                 )}
 
-                {/* Step 9: 店舗選択 */}
-                {step === 9 && (
+                {/* Step 10: 店舗選択 */}
+                {step === 10 && (
                     <div className="w-full bg-white p-6 rounded-2xl shadow-sm animate-in fade-in duration-500">
                         <h2 className="text-lg font-bold mb-4 text-center">よく行く店は？</h2>
                         <p className="text-xs text-center text-gray-400 mb-4">複数選択できます</p>
@@ -644,9 +657,9 @@ function OnboardingContent() {
                             ))}
                         </div>
                         <div className="flex gap-3">
-                            <button onClick={() => setStep(8)} className="flex-1 py-3 text-gray-500 font-medium">戻る</button>
+                            <button onClick={() => setStep(9)} className="flex-1 py-3 text-gray-500 font-medium">戻る</button>
                             <button
-                                onClick={() => setStep(10)}
+                                onClick={() => setStep(11)}
                                 className="flex-1 bg-gray-800 text-white py-3 rounded-xl font-bold"
                             >
                                 次へ
@@ -655,8 +668,8 @@ function OnboardingContent() {
                     </div>
                 )}
 
-                {/* Step 10: 時間指定 */}
-                {step === 10 && (
+                {/* Step 11: 時間指定 */}
+                {step === 11 && (
                     <div className="w-full bg-white p-6 rounded-2xl shadow-sm animate-in fade-in duration-500">
                         <h2 className="text-lg font-bold mb-2 text-center">
                             <Clock className="w-5 h-5 inline-block mr-1 text-pink-500" />
@@ -703,10 +716,11 @@ function OnboardingContent() {
                         </div>
 
                         <div className="flex gap-3">
-                            <button onClick={() => setStep(9)} className="flex-1 py-3 text-gray-500 font-medium">戻る</button>
+                            <button onClick={() => setStep(10)} className="flex-1 py-3 text-gray-500 font-medium">戻る</button>
                             <button
-                                onClick={() => setStep(11)}
-                                className="flex-1 bg-gray-800 text-white py-3 rounded-xl font-bold"
+                                onClick={() => setStep(12)}
+                                disabled={!profile.startTime || !profile.endTime}
+                                className="flex-1 bg-gray-800 text-white py-3 rounded-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 次へ
                             </button>
@@ -714,8 +728,8 @@ function OnboardingContent() {
                     </div>
                 )}
 
-                {/* Step 11: ありがとう画面（自動遷移） */}
-                {step === 11 && (
+                {/* Step 12: ありがとう画面（自動遷移） */}
+                {step === 12 && (
                     <div className="w-full flex flex-col items-center justify-center text-center">
                         <p className="text-lg text-gray-700 leading-relaxed animate-float-up px-4">
                             教えてくれてありがとう！
@@ -723,8 +737,8 @@ function OnboardingContent() {
                     </div>
                 )}
 
-                {/* Step 12: LINE通知案内画面（自動遷移） */}
-                {step === 12 && (
+                {/* Step 13: LINE通知案内画面（自動遷移） */}
+                {step === 13 && (
                     <div className="w-full flex flex-col items-center justify-center text-center">
                         <div className="animate-float-up">
                             <MessageCircle className="w-12 h-12 text-[#06C755] mx-auto mb-6" />
@@ -777,12 +791,12 @@ function OnboardingContent() {
                     </div>
                 )}
 
-                {/* Step 14: 確認＆保存 */}
+                {/* Step 15: 確認＆保存 */}
                 {step === CONFIRM_STEP && (
                     <div className="w-full flex flex-col items-center justify-center text-center">
                         <p className="text-lg text-gray-700 leading-relaxed animate-float-up px-4">
                             設定が完了しました！<br />
-                            さっそくシールを探しに行きましょう 🎉
+                            さっそくシールを探しに行きましょう！
                         </p>
                     </div>
                 )}
