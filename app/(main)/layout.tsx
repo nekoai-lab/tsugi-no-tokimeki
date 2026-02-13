@@ -86,8 +86,8 @@ export default function MainLayout({
             {/* Bottom Navigation - モーダル表示中は非表示、主要4ページのみ表示 */}
             {!isModalOpen && showBottomNav && (
                 <nav
-                    className="absolute w-full bg-white border-t border-gray-100 px-6 py-3 flex justify-between items-center z-20"
-                    style={{ bottom: 'env(safe-area-inset-bottom, 0px)', paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom, 0px))' }}
+                    className="absolute bottom-0 w-full bg-white border-t border-gray-100 px-6 py-3 flex justify-between items-center z-20"
+                    style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom, 0px))' }}
                 >
                     <NavButton href="/home" icon={Sparkles} label="For You" />
                     <NavButton href="/feed" icon={Home} label="Feed" />
