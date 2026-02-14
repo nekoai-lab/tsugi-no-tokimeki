@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { Heart, ChevronRight } from 'lucide-react';
 import { getUserProfile } from '@/lib/userService';
 import type { StickerAlbumPost, UserProfile } from '@/lib/types';
@@ -61,7 +62,7 @@ export default function StickerPostHorizontalList({ posts }: StickerPostHorizont
 
             {/* 横スクロール棚 */}
             <div className="overflow-x-auto scrollbar-hide -mx-4 px-4">
-                <div 
+                <div
                     className="flex gap-3 pb-2"
                     style={{ scrollSnapType: 'x mandatory' }}
                 >
@@ -80,10 +81,12 @@ export default function StickerPostHorizontalList({ posts }: StickerPostHorizont
                                 {/* カード本体 */}
                                 <div className="relative w-full h-32 rounded-xl overflow-hidden bg-gray-100 shadow-sm">
                                     {/* 画像 */}
-                                    <img
+                                    <Image
                                         src={post.imageUrl}
                                         alt={post.caption || 'シール帳の写真'}
-                                        className="w-full h-full object-cover"
+                                        fill
+                                        sizes="(max-width: 768px) 45vw, 160px"
+                                        className="object-cover"
                                     />
 
                                     {/* 下部オーバーレイ（情報） */}
