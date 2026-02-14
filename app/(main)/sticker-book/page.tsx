@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Image from 'next/image';
 import { useApp } from '@/contexts/AppContext';
 import { subscribeStickerAlbumPosts, deleteStickerAlbumPost, addLikeToStickerPost, removeLikeFromStickerPost } from '@/lib/stickerAlbumService';
 import { getUserProfile } from '@/lib/userService';
@@ -9,12 +10,12 @@ import { MoreVertical, Trash2, Heart } from 'lucide-react';
 import ImageViewer from '@/components/ImageViewer';
 import type { StickerAlbumPost, UserProfile } from '@/lib/types';
 
-function StickerCard({ 
-    post, 
-    onTap, 
-    onMenuTap, 
+function StickerCard({
+    post,
+    onTap,
+    onMenuTap,
     onToggleLike,
-    isOwner, 
+    isOwner,
     isHighlighted,
     isLiked,
     userProfile
@@ -43,11 +44,13 @@ function StickerCard({
             onClick={onTap}
         >
             {/* 写真（1:1比率、object-fit: cover） */}
-            <div className="aspect-square w-full overflow-hidden bg-gray-100">
-                <img
+            <div className="relative aspect-square w-full overflow-hidden bg-gray-100">
+                <Image
                     src={post.imageUrl}
                     alt={post.caption || 'sticker photo'}
-                    className="w-full h-full object-cover"
+                    fill
+                    sizes="(max-width: 768px) 50vw, 33vw"
+                    className="object-cover"
                     onLoad={() => setLoaded(true)}
                 />
             </div>
