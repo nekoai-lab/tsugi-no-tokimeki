@@ -479,24 +479,55 @@ function OnboardingContent() {
         setStep(CONFIRM_STEP);
     };
 
-    // LIFF return で戻ってきた場合、loading が長く続いたら強制的に /home へ
-    useEffect(() => {
-        const isFromLiffTimeout = urlStep === '5' || isLiffReturn;
-        if (isFromLiffTimeout && loading) {
-            const timeout = setTimeout(() => {
-                console.log('🔵 [Onboarding] Loading timeout on LIFF return, forcing redirect to /home');
-                router.push('/home');
-            }, 5000); // 5秒でタイムアウト
-            return () => clearTimeout(timeout);
-        }
-    }, [urlStep, loading, router]);
+    // LIFF return（step=5）の場合は、loading中でも確認画面を表示する
+    // これにより、Firebase Auth が遅延してもユーザーが詰まらない
+    const isLiffReturnStep = urlStep === '5' || isLiffReturn;
 
-    if (loading || !user) {
+    // LIFF return で Firebase Auth が完了しない場合のフォールバック（8秒）
+    useEffect(() => {
+        if (!isLiffReturnStep) return;
+        if (!loading && user) return; // Auth完了したら不要
+        if (didNavigateRef.current) return; // 既に遷移済み
+
+        console.log('🔵 [Onboarding] LIFF return fallback timer started (8s)');
+        const fallbackTimer = setTimeout(() => {
+            if (didNavigateRef.current) return;
+            console.log('🔵 [Onboarding] LIFF return fallback: Auth not ready, redirecting to /home');
+            didNavigateRef.current = true;
+            router.push('/home');
+        }, 8000);
+
+        return () => clearTimeout(fallbackTimer);
+    }, [isLiffReturnStep, loading, user, router]);
+
+    // 通常のローディング画面（LIFF return 以外の場合のみ）
+    if ((loading || !user) && !isLiffReturnStep) {
         return (
             <div className="flex min-full-height w-full items-center justify-center onboarding-bg">
                 <div className="flex flex-col items-center">
                     <Sparkles className="w-10 h-10 text-pink-500 animate-bounce" />
                     <p className="mt-4 text-pink-400 font-bold text-sm tracking-widest">LOADING...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // LIFF return の場合で loading 中は、確認画面を表示しつつ待機
+    // Firebase Auth 完了後に Confirm useEffect が動いて保存・遷移する
+    if (isLiffReturnStep && (loading || !user)) {
+        return (
+            <div className="flex flex-col full-height onboarding-bg p-6 overflow-y-auto overflow-x-hidden">
+                <div className="flex-1 flex flex-col justify-center items-center max-w-md mx-auto w-full">
+                    <div className="w-full flex flex-col items-center justify-center text-center">
+                        <Sparkles className="w-10 h-10 text-pink-500 animate-bounce mb-4" />
+                        <p className="text-lg text-gray-700 leading-relaxed animate-float-up px-4">
+                            設定が完了しました！<br />
+                            さっそくシールを探しに行きましょう！
+                        </p>
+                        <p className="text-sm text-gray-400 mt-4">
+                            準備中...
+                        </p>
+                    </div>
                 </div>
             </div>
         );
