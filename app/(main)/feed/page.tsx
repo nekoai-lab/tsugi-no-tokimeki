@@ -12,6 +12,33 @@ import PostDetailModal from '@/components/PostDetailModal';
 
 type StatusFilter = 'all' | 'seen' | 'soldout' | 'pinned';
 
+// 短縮表示用マップ（投稿一覧カードのみで使用）
+const STORE_SHORT_LABEL_MAP: Record<string, string> = {
+    "東急ハンズ": "ハンズ",
+    "ドンキホーテ": "ドンキ",
+    "LOFT": "ロフト",
+    "PLAZA": "プラザ",
+    "キデイランド": "キディ",
+    "ビレッジバンガード": "ヴィレヴァン",
+    "その他": "その他",
+};
+
+const TYPE_SHORT_LABEL_MAP: Record<string, string> = {
+    "ボンボンドロップシール": "ボンドロ",
+    "プチドロップシール": "プチドロ",
+    "ウォーターシール": "ウォーター",
+    "おはじきシール": "おはじき",
+    "タイルシール": "タイル",
+    "平面シール": "平面",
+    "その他": "その他",
+};
+
+// 短縮表示用ヘルパー関数（マップ優先 → 末尾省略）
+const getShortLabel = (value: string, map: Record<string, string>, maxLen = 10): string => {
+    const label = map[value] ?? value;
+    return label.length > maxLen ? label.slice(0, maxLen - 1) + '…' : label;
+};
+
 interface UserProfileMap {
     [uid: string]: { displayName: string; handle: string };
 }
@@ -197,9 +224,9 @@ export default function FeedPage() {
 
     const formatNewsLine = (post: Post) => {
         const area = post.areaMasked || 'エリア不明';
-        const shop = post.shopName || '店舗不明';
+        const shop = post.shopName ? getShortLabel(post.shopName, STORE_SHORT_LABEL_MAP) : '店舗不明';
         const character = post.character;
-        const stickerType = post.stickerType;
+        const stickerType = getShortLabel(post.stickerType, TYPE_SHORT_LABEL_MAP);
         const statusText = post.status === 'soldout' ? '売り切れ' : 'あり';
         return `${area} ${shop} ${character} ${stickerType} ${statusText}`;
     };
@@ -345,11 +372,11 @@ export default function FeedPage() {
                                         {post.shopName && (
                                             <>
                                                 <span className="text-gray-300">/</span>
-                                                <span className="truncate">{post.shopName}</span>
+                                                <span className="truncate">{getShortLabel(post.shopName, STORE_SHORT_LABEL_MAP)}</span>
                                             </>
                                         )}
                                         <span className="text-gray-300">/</span>
-                                        <span className="truncate">{post.stickerType}</span>
+                                        <span className="truncate">{getShortLabel(post.stickerType, TYPE_SHORT_LABEL_MAP)}</span>
                                         {post.text && (
                                             <>
                                                 <span className="text-gray-300">・</span>
